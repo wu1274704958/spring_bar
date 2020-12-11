@@ -22,9 +22,9 @@ public:
 	virtual bool IsAbove(int x, int y) override;
 	virtual std::string GetTooltip(int x, int y) override;
 
-	static bool enabled;
-	static void Create(const std::vector<unsigned char>& winningAllyTeams) { if (endGameBox == nullptr) new CEndGameBox(winningAllyTeams);}
-	static void Destroy() { if (endGameBox != nullptr) { delete endGameBox; endGameBox = nullptr; } }
+	static int enabledMode;
+	static void Create(const std::vector<unsigned char>& winningAllyTeams) { if (endGameBox == NULL) new CEndGameBox(winningAllyTeams);}
+	static void Destroy() { if (endGameBox != NULL) { delete endGameBox; endGameBox = NULL; } }
 
 protected:
 	static CEndGameBox* endGameBox;
