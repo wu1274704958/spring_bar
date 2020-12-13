@@ -4,6 +4,9 @@
 #define LUA_GL_H
 
 #include <vector>
+#include <string>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "Lua/LuaHandle.h"
 
@@ -133,6 +136,9 @@ class LuaOpenGL {
 	private:
 		static bool inSafeMode;
 		static bool inBeginEnd;
+
+		static std::unordered_map<GLenum, std::string> fixedStateEnumToString;
+		static std::string fixedStateEnumToStringUnk;
 
 	private:
 		static void CheckDrawingEnabled(lua_State* L, const char* caller);
@@ -273,6 +279,7 @@ class LuaOpenGL {
 		static int PushAttrib(lua_State* L);
 		static int PopAttrib(lua_State* L);
 		static int UnsafeState(lua_State* L);
+		static int GetFixedState(lua_State* L);
 
 		static int Flush(lua_State* L);
 		static int Finish(lua_State* L);
