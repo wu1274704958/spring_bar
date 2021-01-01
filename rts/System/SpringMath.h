@@ -10,6 +10,7 @@
 
 #include <cmath> // std::fabs
 #include <algorithm> // std::{min,max}
+#include <limits>
 
 static constexpr int SPRING_MAX_HEADING = 32768;
 static constexpr int SPRING_CIRCLE_DIVS = (SPRING_MAX_HEADING << 1);
@@ -118,6 +119,38 @@ template<class T> constexpr T Square(const T x) { return x*x; }
 template<class T> constexpr T Clamp(const T v, const T vmin, const T vmax) { return std::min(vmax, std::max(vmin, v)); }
 // NOTE: '>' instead of '>=' s.t. Sign(int(true)) != Sign(int(false)) --> zero is negative!
 template<class T> constexpr T Sign(const T v) { return ((v > T(0)) * T(2) - T(1)); }
+
+template <typename T>
+constexpr T AlignUp(T value, size_t size)
+{
+	static_assert(std::is_unsigned<T>(), "T must be an unsigned value.");
+	return static_cast<T>(value + (size - value % size) % size);
+}
+
+template <typename T>
+constexpr T AlignDown(T value, size_t size)
+{
+	static_assert(std::is_unsigned<T>(), "T must be an unsigned value.");
+	return static_cast<T>(value - value % size);
+}
+
+
+template<typename TIn, typename TOut>
+TOut TransformFunc(const TIn input)
+{
+	if constexpr (std::is_same_v<TIn, TOut>)
+		return input;
+
+	constexpr TOut minOut = std::numeric_limits<TOut>::lowest();
+	constexpr TOut maxOut = std::numeric_limits<TOut>::max();
+
+	const TIn minIn = static_cast<TIn>(minOut);
+	const TIn maxIn = static_cast<TIn>(maxOut);
+
+	if (input < minIn) return minOut; // overflow
+	if (input > maxIn) return maxOut; // overflow
+	return static_cast<TOut>(input);
+}
 
 /**
  * @brief does a division and returns additionally the remnant
