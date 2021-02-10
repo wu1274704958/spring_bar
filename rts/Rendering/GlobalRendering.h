@@ -231,6 +231,7 @@ public:
 	 * Does the user want team colored nanospray?
 	 */
 	bool teamNanospray;
+	bool grabInput; //what it says
 
 	/**
 	 * @brief compressTextures

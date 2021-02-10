@@ -120,6 +120,9 @@ CR_REG_METADATA(CGlobalRendering, (
 	CR_IGNORED(maxTexAnisoLvl),
 
 	CR_MEMBER(teamNanospray),
+
+	CR_IGNORED(grabInput),
+
 	CR_IGNORED(compressTextures),
 
 	CR_IGNORED(haveAMD),
@@ -217,6 +220,8 @@ CGlobalRendering::CGlobalRendering()
 	, glDebugErrors(false)
 
 	, teamNanospray(configHandler->GetBool("TeamNanoSpray"))
+
+	, grabInput(false)
 	, compressTextures(configHandler->GetBool("CompressTextures"))
 
 	, haveAMD(false)
