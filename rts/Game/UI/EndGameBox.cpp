@@ -486,7 +486,7 @@ void CEndGameBox::Draw()
 
 std::string CEndGameBox::GetTooltip(int x, int y)
 {
-	if (!enabled)
+	if (enabledMode == 0)
 		return "";
 
 	const float mx = MouseX(x);
