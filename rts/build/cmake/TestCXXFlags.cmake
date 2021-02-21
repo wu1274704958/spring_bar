@@ -45,33 +45,6 @@ if    (NOT DEFINED VISIBILITY_INLINES_HIDDEN)
 	endif (NOT WIN32)
 endif (NOT DEFINED VISIBILITY_INLINES_HIDDEN)
 
-
-if    (NOT DEFINED SSE_FLAGS)
-	if   (MSVC)
-		#Set(SSE_FLAGS "/arch:SSE2")
-	else (MSVC)
-		check_cxx_accepts_flag("-msse -mfpmath=sse" HAS_SSE_FLAGS)
-		if    (HAS_SSE_FLAGS)
-			# activate SSE1 only
-			set(SSE_FLAGS "-msse -mfpmath=sse")
-			#Set(SSE_FLAGS "${SSE_FLAGS} -mmmx")
-
-			# worth to test if sync
-			#Set(SSE_FLAGS "${SSE_FLAGS} -mpopcnt -mlzcnt -mabm")
-
-			# disable rest
-			#Set(SSE_FLAGS "${SSE_FLAGS} -mno-3dnow") tests showed it might sync
-			check_and_add_flags(SSE_FLAGS -mno-sse2 -mno-sse3 -mno-ssse3 -mno-sse4.1 -mno-sse4.2 -mno-sse4 -mno-sse4a)
-			check_and_add_flags(SSE_FLAGS -mno-avx -mno-fma -mno-fma4 -mno-xop -mno-lwp)
-			check_and_add_flags(SSE_FLAGS -mno-avx2)
-		else  (HAS_SSE_FLAGS)
-			set(SSE_FLAGS "-DDEDICATED_NOSSE")
-			message(WARNING "SSE1 support is missing, online play is highly discouraged with this build")
-		endif (HAS_SSE_FLAGS)
-	endif (MSVC)
-endif (NOT DEFINED SSE_FLAGS)
-
-
 If    (NOT DEFINED IEEE_FP_FLAG)
 	If   (MSVC)
 		Set(IEEE_FP_FLAG "/fp:strict")
@@ -113,15 +86,10 @@ IF    (NOT MSVC AND NOT DEFINED MARCH)
 	# 64bit
 	if    ((CMAKE_SIZEOF_VOID_P EQUAL 8) AND (NOT MARCH))
 		# always syncs with 32bit
-		check_cxx_accepts_flag("-march=x86-64" HAS_X86_64_FLAG_)
+		check_cxx_accepts_flag("-march=x86_64" HAS_X86_64_FLAG_)
 		if    (HAS_X86_64_FLAG_)
-			set(MARCH "x86-64")
+			set(MARCH "x86_64")
 		endif (HAS_X86_64_FLAG_)
-		# MCST lcc compiler accept -march=elbrus-v2/v3/v4/v5/v6 and -march=native
-		check_cxx_accepts_flag("-march=elbrus-v2" HAS_E2K_FLAG_)
-		if    (HAS_E2K_FLAG_)
-			set(MARCH "native")
-		endif (HAS_E2K_FLAG_)
 	endif ((CMAKE_SIZEOF_VOID_P EQUAL 8) AND (NOT MARCH))
 endif (NOT MSVC AND NOT DEFINED MARCH)
 

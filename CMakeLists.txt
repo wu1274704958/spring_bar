@@ -9,6 +9,8 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE "${CMAKE_MODULES_SPRING}/OverrideFlags.cmake"
 
 project(Spring)
 
+add_definitions(-DFMT_HEADER_ONLY) #for fmt lib
+
 # dummy so that qtcreator shows all files (even those of windows)
 if(CMAKE_VERSION VERSION_GREATER 3.1.2)
 	add_library(platform_sources EXCLUDE_FROM_ALL "")
@@ -88,7 +90,7 @@ endif (APPLE)
 include(TestCXXFlags)
 
 ## 32bit or 64bit?
-set(MARCH_FLAG ${MARCH} CACHE STRING "CPU optimization (use i686 for generic optimization)")
+set(MARCH_FLAG ${MARCH} CACHE STRING "CPU optimization (use `generic` for generic optimization)")
 if    (CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(MARCH_BITS 64 CACHE INTERNAL "" FORCE)
 else  (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -158,6 +160,7 @@ else  (UNIX AND NOT MINGW)
 
 	if(MSVC)
 		add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+		set(GLEW_STATIC ON)
 		set(EXE_FLAGS WIN32)
 	else()
 		include_directories(rts/lib/mingw-std-threads)
@@ -239,7 +242,6 @@ if    (WIN32)
 		endif (NOT WINDOWS_CONSOLE)
 	endif(NOT MSVC)
 endif (WIN32)
-
 
 # Note the missing REQUIRED, as headless & dedi may not depend on those.
 #  So req. checks are done in the build target's CMakeLists.txt.
@@ -323,7 +325,11 @@ else  (LDGOLD_FOUND)
 endif (LDGOLD_FOUND)
 
 message(STATUS "Compiling with C++17")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX17_FLAGS}")
+if(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /Zc:__cplusplus")
+else (MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX17_FLAGS}")
+endif(MSVC)
 
 add_definitions(-D_GLIBCXX_USE_NANOSLEEP) # issue in std::chrono with gentoo and few other distros
 add_definitions(-D_RANDOM_TCC) # don't include <bits/random.tcc>, it fails to compile with single precision constants
@@ -377,16 +383,9 @@ option(ENABLE_STREFLOP "build Spring with streflop support (REQUIRED FOR MULTIPL
 
 if (ENABLE_STREFLOP)
 ## note: is removed in ./AI/CMakeLists.txt since it would break AI compilation
-	if (HAS_I686_FLAG_ OR HAS_X86_64_FLAG_)
-		add_definitions(-DSTREFLOP_SSE)
-		message(STATUS "Build with streflop support (using SSE implementation)")
-	else ()
-		add_definitions(-DSTREFLOP_SOFT)
-		message(STATUS "Build with streflop support (using software implementation)")
-	endif ()
+add_definitions(-DSTREFLOP_SSE)
 else ()
-	add_definitions(-DNOT_USING_STREFLOP)
-	message(STATUS "Build without streflop support (REQUIRED FOR MULTIPLAYER)")
+add_definitions(-DNOT_USING_STREFLOP)
 endif ()
 
 
@@ -406,15 +405,39 @@ elseif (CMAKE_COMPILER_IS_GNUCXX)
 		check_and_add_flags(CMAKE_CXX_FLAGS "-fdiagnostics-color=auto")
 	endif (UNIX)
 
-	if    (MARCH_FLAG)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${MARCH_FLAG}")
-		message(STATUS "using march=${MARCH_FLAG}")
-	else  (MARCH_FLAG)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtune=generic")
-		message(STATUS "using mtune=generic")
-	endif (MARCH_FLAG)
+	if (NOT MARCH_FLAG)
+		set(MARCH_FLAG "generic")
+	endif (NOT MARCH_FLAG)
 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SSE_FLAGS}") # SSE1
+	if (MARCH_FLAG STREQUAL "")
+		set(MARCH_FLAG "generic")
+	endif (MARCH_FLAG STREQUAL "")
+
+	if (NOT MARCH_FLAG STREQUAL "generic")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${MARCH_FLAG} -mtune=${MARCH_FLAG}") #march/mtune define SSE flags
+	else (NOT MARCH_FLAG STREQUAL "generic")
+		set(FALLBACK_SSE_FLAGS "-msse")
+		#set(FALLBACK_SSE_FLAGS "${FALLBACK_SSE_FLAGS} -mmmx")
+
+		# worth to test if sync
+		#set(FALLBACK_SSE_FLAGS "${FALLBACK_SSE_FLAGS} -mpopcnt -mlzcnt -mabm")
+
+		# disable rest
+		#set(FALLBACK_SSE_FLAGS "${FALLBACK_SSE_FLAGS} -mno-3dnow") tests showed it might sync
+		set(FALLBACK_SSE_FLAGS "${FALLBACK_SSE_FLAGS} -mno-sse2 -mno-sse3 -mno-ssse3 -mno-sse4.1 -mno-sse4.2 -mno-sse4 -mno-sse4a")
+		set(FALLBACK_SSE_FLAGS "${FALLBACK_SSE_FLAGS} -mno-avx -mno-fma -mno-fma4 -mno-xop -mno-lwp")
+		set(FALLBACK_SSE_FLAGS "${FALLBACK_SSE_FLAGS} -mno-avx2")
+
+		if (MARCH_BITS EQUAL 64)
+			set(FALLBACK_MARCH "x86-64")
+		else (MARCH_BITS EQUAL 64)
+			set(FALLBACK_MARCH "i686")
+		endif (MARCH_BITS EQUAL 64)
+
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${FALLBACK_MARCH} -mtune=generic ${FALLBACK_SSE_FLAGS}")
+	endif (NOT MARCH_FLAG STREQUAL "generic")
+
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SSE_FLAGS} -mfpmath=sse") #SSE_FLAGS are now user input only
 elseif (MSVC)
 	# silence warnings
 	add_definitions(-D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS)
@@ -452,15 +475,23 @@ else  (MSVC)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mthreads")
 	endif (MINGW)
 
-	set(CMAKE_CXX_FLAGS_DEBUG           "${CXX_FLAGS_DEBUG_ADDITIONAL} -O0     ${DEBUG_WARNINGS}  ${CXX_DEBUG_DEFINES}")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CXX_FLAGS_DEBUG_ADDITIONAL} -O2     ${COMMON_WARNINGS} ${CXX_RELWITHDEBINFO_DEFINES}")
-	set(CMAKE_CXX_FLAGS_RELEASE         "                              -O2     ${COMMON_WARNINGS} ${CXX_RELEASE_DEFINES}")
-	set(CMAKE_CXX_FLAGS_PROFILE         "                              -O2 -pg ${DEBUG_WARNINGS}  ${CXX_PROFILE_DEFINES}")
+	#set(CMAKE_CXX_FLAGS_DEBUG           "${CXX_FLAGS_DEBUG_ADDITIONAL} -O0     ${DEBUG_WARNINGS}  ${CXX_DEBUG_DEFINES}")
+	#set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CXX_FLAGS_DEBUG_ADDITIONAL} -O2     ${COMMON_WARNINGS} ${CXX_RELWITHDEBINFO_DEFINES}")
+	#set(CMAKE_CXX_FLAGS_RELEASE         "                              -O2     ${COMMON_WARNINGS} ${CXX_RELEASE_DEFINES}")
+	#set(CMAKE_CXX_FLAGS_PROFILE         "                              -O2 -pg ${DEBUG_WARNINGS}  ${CXX_PROFILE_DEFINES}")
+
+	#rely on cmake defaults
+	set(CMAKE_CXX_FLAGS_DEBUG           "${CMAKE_CXX_FLAGS_DEBUG} ${DEBUG_WARNINGS}  ${CXX_DEBUG_DEFINES}")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COMMON_WARNINGS} ${CXX_RELWITHDEBINFO_DEFINES}")
+	set(CMAKE_CXX_FLAGS_RELEASE         "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_WARNINGS} ${CXX_RELEASE_DEFINES}")
+	set(CMAKE_CXX_FLAGS_PROFILE         "${CMAKE_CXX_FLAGS_PROFILE} ${DEBUG_WARNINGS}  ${CXX_PROFILE_DEFINES}")
+
+
 	set(CMAKE_MODULE_LINKER_FLAGS_PROFILE "-pg")
 	set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "-pg")
 
-	set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -ggdb")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g")
+	#set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -ggdb3") #cmake has -g it by default
+	#set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -ggdb3") #cmake has -g it by default
 
 	if (MARCH_BITS EQUAL 64 AND BUILD_BITS EQUAL 32)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
@@ -481,6 +512,17 @@ else  (MSVC)
 	endif  (MINGW)
 endif (MSVC)
 
+message(STATUS "Using CMAKE_CXX_FLAGS:${CMAKE_CXX_FLAGS}")
+
+if (CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
+	message (STATUS "Using CMAKE_CXX_FLAGS_RELWITHDEBINFO:${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+elseif (CMAKE_BUILD_TYPE STREQUAL "DEBUG")
+	message (STATUS "Using CMAKE_CXX_FLAGS_DEBUG:${CMAKE_CXX_FLAGS_DEBUG}")
+elseif (CMAKE_BUILD_TYPE STREQUAL "RELEASE")
+	message (STATUS "Using CMAKE_CXX_FLAGS_RELEASE:${CMAKE_CXX_FLAGS_RELEASE}")
+elseif (CMAKE_BUILD_TYPE STREQUAL "PROFILE")
+	message (STATUS "Using CMAKE_CXX_FLAGS_PROFILE:${CMAKE_CXX_FLAGS_PROFILE}")
+endif (CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
 
 
 #######################################

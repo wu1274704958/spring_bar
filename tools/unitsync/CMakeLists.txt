@@ -31,6 +31,10 @@ else  (MINGW OR MSVC)
 	include_directories(${CMAKE_SOURCE_DIR}/include/SDL2)
 endif (MINGW OR MSVC)
 
+if    (MINGW)
+	#list(APPEND unitsync_lib_flags -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread)
+	list(APPEND unitsync_lib_flags -static-libgcc -Wl,-Bstatic -lpthread)
+endif (MINGW)
 
 add_definitions(-DUNITSYNC)
 if (NOT WIN32)
@@ -117,27 +121,7 @@ endif ()
 #   to be able to link to it
 add_library(unitsync SHARED ${unitsync_files})
 add_dependencies(unitsync generateVersionFiles)
-target_link_libraries(unitsync ${unitsync_libs})
-
-
-# hide exported symbols
-# see nm -c libunitsync.so
-include(CMakePushCheckState)
-include(CheckCXXCompilerFlag)
-function(check_linker_flag flag out_var)
-  cmake_push_check_state()
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${flag}")
-  check_cxx_compiler_flag("" ${out_var})
-  cmake_pop_check_state()
-endfunction()
-check_linker_flag("-Wl,--exclude-libs,ALL" LINKER_HAS_EXCLUDELIBS)
-if (LINKER_HAS_EXCLUDELIBS)
-	set_target_properties(unitsync PROPERTIES LINK_FLAGS -Wl,--exclude-libs,ALL)
-else()
-	message(WARNING "linker doesn't support -Wl,--exclude-libs,ALL this leads to a broken unitsync.so")
-endif()
-
-
+target_link_libraries(unitsync ${unitsync_libs} ${unitsync_lib_flags})
 if (MINGW)
 	set_target_properties(unitsync PROPERTIES LINK_FLAGS -Wl,--add-stdcall-alias)
 endif (MINGW)
