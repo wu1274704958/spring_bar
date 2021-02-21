@@ -14,10 +14,10 @@
 #endif
 
 #if defined(__APPLE__)
-	#include <OpenGL/gl3.h>
-	#include <OpenGL/gl3ext.h>
+	#include <OpenGL/glu.h>
+	#include <OpenGL/glext.h>
 #else
-	#include <GL/gl.h>
+	#include <GL/glu.h>
 	#include <GL/glext.h>
 #endif
 
@@ -32,8 +32,8 @@ extern "C" {
 #define GLEW_VERSION_2_0 GL_FALSE
 #define GLEW_VERSION_3_0 GL_FALSE
 
-#define GLEW_ARB_vertex_program2 GL_FALSE
-#define GLEW_ARB_depth_clamp GL_FALSE
+#define GLEW_NV_vertex_program2 GL_FALSE
+#define GLEW_NV_depth_clamp GL_FALSE
 #define GLEW_EXT_framebuffer_blit GL_FALSE
 #define GLEW_EXT_framebuffer_object GL_FALSE
 #define GLEW_EXT_stencil_two_side GL_TRUE
@@ -55,6 +55,7 @@ extern "C" {
 #define GLEW_ARB_multitexture GL_TRUE
 #define GLEW_ARB_depth_texture GL_TRUE
 #define GLEW_ARB_vertex_buffer_object GL_FALSE
+#define GLEW_ARB_vertex_array_object GL_FALSE
 #define GLEW_ARB_vertex_shader GL_FALSE
 #define GLEW_ARB_vertex_program GL_FALSE
 #define GLEW_ARB_shader_objects GL_FALSE
@@ -66,12 +67,18 @@ extern "C" {
 #define GLEW_ARB_imaging GL_FALSE
 #define GLEW_ARB_occlusion_query GL_FALSE
 #define GLEW_ARB_geometry_shader4 GL_FALSE
+#define GLEW_ARB_instanced_arrays GL_FALSE
 #define GLEW_ARB_transform_feedback_instanced GL_FALSE
 #define GLEW_ARB_uniform_buffer_object GL_FALSE
+#define GLEW_ARB_shader_storage_buffer_object GL_FALSE
 #define GLEW_ARB_transform_feedback3 GL_FALSE
 #define GLEW_EXT_blend_equation_separate GL_FALSE
 #define GLEW_EXT_blend_func_separate GL_FALSE
 #define GLEW_ARB_framebuffer_object GL_FALSE
+#define GLEW_ARB_shading_language_420pack GL_FALSE
+#define GLEW_ARB_buffer_storage GL_FALSE
+#define GLEW_ARB_draw_elements_base_vertex GL_FALSE
+#define GLEW_ARB_copy_buffer GL_FALSE
 
 #define GLXEW_SGI_video_sync GL_FALSE
 
