@@ -13,6 +13,8 @@ struct SDL_version;
 struct SDL_Window;
 typedef void* SDL_GLContext;
 
+struct CMatrix44f;
+
 /**
  * @brief Globally accessible unsynced, rendering related data
  *
@@ -25,6 +27,8 @@ class CGlobalRendering {
 public:
 	CGlobalRendering();
 	~CGlobalRendering();
+
+	void PreKill();
 
 	static void InitStatic();
 	static void KillStatic();
@@ -74,6 +78,7 @@ public:
 	void SaveWindowPosAndSize();
 	void UpdateGLConfigs();
 	void UpdateGLGeometry();
+	void UpdateScreenMatrices();
 
 	int2 GetScreenCenter() const { return {viewPosX + (viewSizeX >> 1), viewPosY + (viewSizeY >> 1)}; }
 	int2 GetMaxWinRes() const;
@@ -161,6 +166,10 @@ public:
 	int viewSizeX;
 	int viewSizeY;
 
+	/// screen {View,Proj} matrices for rendering in pixel coordinates
+	std::unique_ptr<CMatrix44f> screenViewMatrix;
+	std::unique_ptr<CMatrix44f> screenProjMatrix;
+
 	/// size of one pixel in viewport coordinates, i.e. 1/viewSizeX and 1/viewSizeY
 	float pixelX;
 	float pixelY;
@@ -236,11 +245,17 @@ public:
 	 * These can be used to enable workarounds for bugs in their drivers.
 	 * Note, you should always give the user the possiblity to override such workarounds via config-tags.
 	 */
-	bool haveATI;
+	bool haveAMD;
 	bool haveMesa;
 	bool haveIntel;
 	bool haveNvidia;
 
+	/**
+	* @brief whether the GPU supports persistent buffer mapping
+	*
+	* ARB_buffer_storage or OpenGL 4.4
+	*/
+	bool supportPersistentMapping;
 
 	/**
 	 * @brief if the GPU (drivers) support NonPowerOfTwoTextures
@@ -272,6 +287,8 @@ public:
 	int glslMaxRecommendedVertices;
 	int glslMaxUniformBufferBindings;
 	int glslMaxUniformBufferSize; ///< in bytes
+	int glslMaxStorageBufferBindings;
+	int glslMaxStorageBufferSize; ///< in bytes
 
 	/**
 	 * @brief dual screen mode

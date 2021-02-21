@@ -401,11 +401,11 @@ void GL::RenderDataBuffer::Upload(
 ) {
 	array.Bind();
 	elems.Bind();
-	elems.New(numElems * sizeof(uint8_t), elems.usage, rawElems);
+	elems.New(numElems * sizeof(uint8_t), elems.GetUsage(), rawElems);
 
 	if (numIndcs > 0) {
 		indcs.Bind();
-		indcs.New(numIndcs * sizeof(uint8_t), indcs.usage, rawIndcs);
+		indcs.New(numIndcs * sizeof(uint8_t), indcs.GetUsage(), rawIndcs);
 	}
 
 	EnableAttribs(numAttrs, rawAttrs);

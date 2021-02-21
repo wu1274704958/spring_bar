@@ -199,8 +199,8 @@ namespace GL {
 			return true;
 		}
 
-		void SetElemBufferUsage(unsigned int usage) { elems.usage = usage; }
-		void SetIndxBufferUsage(unsigned int usage) { indcs.usage = usage; }
+		void SetElemBufferUsage(unsigned int usage) { elems.SetUsage(usage); }
+		void SetIndxBufferUsage(unsigned int usage) { indcs.SetUsage(usage); }
 
 		void EnableShader() { shader.Enable(); }
 		void DisableShader() { shader.Disable(); }

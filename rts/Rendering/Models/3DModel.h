@@ -92,7 +92,7 @@ struct S3DModelPiece {
 	S3DModelPiece() = default;
 
 	// runs during global deinit, can not Clear() since that touches OpenGL
-	virtual ~S3DModelPiece() { assert(shatterIndices.vboId == 0); }
+	virtual ~S3DModelPiece() { assert(shatterIndices.GetId() == 0); }
 
 	virtual void Clear() {
 		name.clear();

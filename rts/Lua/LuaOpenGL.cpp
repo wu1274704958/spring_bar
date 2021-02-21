@@ -81,13 +81,6 @@ static VA_TYPE_L luaBufferVertex = {
 };
 
 
-// .x := screen width (meters), .y := eye-to-screen (meters)
-static float2 screenParameters = {0.36f, 0.60f};
-
-static CMatrix44f screenViewMatrix;
-static CMatrix44f screenProjMatrix;
-
-
 static LuaOpenGL::DrawMode currDrawMode = LuaOpenGL::DRAW_NONE;
 static LuaOpenGL::DrawMode prevDrawMode = LuaOpenGL::DRAW_NONE; // for minimap (when drawn in Screen mode)
 
@@ -279,8 +272,6 @@ bool LuaOpenGL::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(GetNumber);
 	REGISTER_LUA_CFUNC(GetString);
 	REGISTER_LUA_CFUNC(GetDefaultShaderSources);
-
-	REGISTER_LUA_CFUNC(ConfigScreen);
 
 	REGISTER_LUA_CFUNC(GetScreenViewTrans);
 	REGISTER_LUA_CFUNC(GetScreenViewMatrix);
@@ -721,13 +712,11 @@ void LuaOpenGL::EnableDrawScreenCommon()
 	EnableCommon(DRAW_SCREEN);
 	resetMatrixFunc = ResetScreenMatrices;
 
-	SetupScreenMatrices();
 	ResetGLState();
 }
 
 void LuaOpenGL::DisableDrawScreenCommon()
 {
-	RevertScreenMatrices();
 	DisableCommon(DRAW_SCREEN);
 }
 
@@ -837,46 +826,6 @@ void LuaOpenGL::ResetDrawInMiniMapBackground()
 	ResetGLState();
 }
 
-
-/******************************************************************************/
-/******************************************************************************/
-
-void LuaOpenGL::SetupScreenMatrices()
-{
-	const int remScreenSize = globalRendering->screenSizeY - globalRendering->winSizeY; // remaining desktop size (ssy >= wsy)
-	const int bottomWinCoor = remScreenSize - globalRendering->winPosY; // *bottom*-left origin
-
-	const float vpx  = globalRendering->viewPosX + globalRendering->winPosX;
-	const float vpy  = globalRendering->viewPosY + bottomWinCoor;
-	const float vsx  = globalRendering->viewSizeX; // same as winSizeX except in dual-screen mode
-	const float vsy  = globalRendering->viewSizeY; // same as winSizeY
-	const float ssx  = globalRendering->screenSizeX;
-	const float ssy  = globalRendering->screenSizeY;
-	const float hssx = 0.5f * ssx;
-	const float hssy = 0.5f * ssy;
-
-	const float zplane = screenParameters.y * (ssx / screenParameters.x);
-	const float znear  = zplane * 0.5f;
-	const float zfar   = zplane * 2.0f;
-	const float zfact  = znear / zplane;
-
-	const float left   = (vpx - hssx) * zfact;
-	const float bottom = (vpy - hssy) * zfact;
-	const float right  = ((vpx + vsx) - hssx) * zfact;
-	const float top    = ((vpy + vsy) - hssy) * zfact;
-
-	// translate s.t. (0,0,0) is on the zplane, on the window's bottom-left corner
-	screenViewMatrix = CMatrix44f{float3{left / zfact, bottom / zfact, -zplane}};
-	screenProjMatrix = CMatrix44f::ClipControl(globalRendering->supportClipSpaceControl) * CMatrix44f::PerspProj(left, right, bottom, top, znear, zfar);
-}
-
-void LuaOpenGL::RevertScreenMatrices()
-{
-	screenProjMatrix = CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f);
-	screenViewMatrix = CMatrix44f::Identity();
-}
-
-
 /******************************************************************************/
 /******************************************************************************/
 
@@ -951,33 +900,25 @@ int LuaOpenGL::GetDefaultShaderSources(lua_State* L)
 	return 1;
 }
 
-
-int LuaOpenGL::ConfigScreen(lua_State* L)
-{
-	screenParameters.x = luaL_checkfloat(L, 1);
-	screenParameters.y = luaL_checkfloat(L, 2);
-	return 0;
-}
-
 int LuaOpenGL::GetScreenViewTrans(lua_State* L)
 {
-	lua_pushnumber(L, screenViewMatrix[12]);
-	lua_pushnumber(L, screenViewMatrix[13]);
-	lua_pushnumber(L, screenViewMatrix[14]);
+	lua_pushnumber(L, globalRendering->screenViewMatrix->m[12]);
+	lua_pushnumber(L, globalRendering->screenViewMatrix->m[13]);
+	lua_pushnumber(L, globalRendering->screenViewMatrix->m[14]);
 	return 3;
 }
 
 
-static int PushMatrixParams(lua_State* L, const CMatrix44f& mat)
+static int PushMatrixParams(lua_State* L, const std::unique_ptr<CMatrix44f>& mat)
 {
-	for (float p: mat.m) {
+	for (float p: mat->m) {
 		lua_pushnumber(L, p);
 	}
 	return 16;
 }
 
-int LuaOpenGL::GetScreenViewMatrix(lua_State* L) { return PushMatrixParams(L, screenViewMatrix); }
-int LuaOpenGL::GetScreenProjMatrix(lua_State* L) { return PushMatrixParams(L, screenProjMatrix); }
+int LuaOpenGL::GetScreenViewMatrix(lua_State* L) { return PushMatrixParams(L, globalRendering->screenViewMatrix); }
+int LuaOpenGL::GetScreenProjMatrix(lua_State* L) { return PushMatrixParams(L, globalRendering->screenProjMatrix); }
 
 
 int LuaOpenGL::GetViewSizes(lua_State* L)

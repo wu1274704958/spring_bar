@@ -8,6 +8,7 @@
 #include "Rendering/VerticalSync.h"
 #include "Rendering/GL/myGL.h"
 #include "Rendering/GL/FBO.h"
+#include "Rendering/UniformConstants.h"
 #include "Rendering/GL/RenderDataBuffer.hpp"
 #include "System/bitops.h"
 #include "System/EventHandler.h"
@@ -103,6 +104,8 @@ CR_REG_METADATA(CGlobalRendering, (
 	CR_IGNORED(viewPosY),
 	CR_IGNORED(viewSizeX),
 	CR_IGNORED(viewSizeY),
+	CR_IGNORED(screenViewMatrix),
+	CR_IGNORED(screenProjMatrix),
 	CR_IGNORED(pixelX),
 	CR_IGNORED(pixelY),
 
@@ -119,11 +122,12 @@ CR_REG_METADATA(CGlobalRendering, (
 	CR_MEMBER(teamNanospray),
 	CR_IGNORED(compressTextures),
 
-	CR_IGNORED(haveATI),
+	CR_IGNORED(haveAMD),
 	CR_IGNORED(haveMesa),
 	CR_IGNORED(haveIntel),
 	CR_IGNORED(haveNvidia),
 
+	CR_IGNORED(supportPersistentMapping),
 	CR_IGNORED(supportNonPowerOfTwoTex),
 	CR_IGNORED(supportTextureQueryLOD),
 	CR_IGNORED(support24bitDepthBuffer),
@@ -138,6 +142,8 @@ CR_REG_METADATA(CGlobalRendering, (
 	CR_IGNORED(glslMaxRecommendedVertices),
 	CR_IGNORED(glslMaxUniformBufferBindings),
 	CR_IGNORED(glslMaxUniformBufferSize),
+	CR_IGNORED(glslMaxStorageBufferBindings),
+	CR_IGNORED(glslMaxStorageBufferSize),
 	CR_IGNORED(dualScreenMode),
 	CR_IGNORED(dualScreenMiniMapOnLeft),
 
@@ -152,7 +158,7 @@ CR_REG_METADATA(CGlobalRendering, (
 
 
 void CGlobalRendering::InitStatic() { globalRendering = new (globalRenderingMem) CGlobalRendering(); }
-void CGlobalRendering::KillStatic() { spring::SafeDestruct(globalRendering); }
+void CGlobalRendering::KillStatic() { globalRendering->PreKill();  spring::SafeDestruct(globalRendering); }
 
 
 CGlobalRendering::CGlobalRendering()
@@ -177,6 +183,9 @@ CGlobalRendering::CGlobalRendering()
 	, viewPosY(0)
 	, viewSizeX(1)
 	, viewSizeY(1)
+
+	, screenViewMatrix(nullptr)
+	, screenProjMatrix(nullptr)
 
 	// pixel geometry
 	, pixelX(0.01f)
@@ -210,11 +219,12 @@ CGlobalRendering::CGlobalRendering()
 	, teamNanospray(configHandler->GetBool("TeamNanoSpray"))
 	, compressTextures(configHandler->GetBool("CompressTextures"))
 
-	, haveATI(false)
+	, haveAMD(false)
 	, haveMesa(false)
 	, haveIntel(false)
 	, haveNvidia(false)
 
+	, supportPersistentMapping(false)
 	, supportNonPowerOfTwoTex(false)
 	, supportTextureQueryLOD(false)
 	, support24bitDepthBuffer(false)
@@ -238,6 +248,9 @@ CGlobalRendering::CGlobalRendering()
 	, sdlWindows{nullptr, nullptr}
 	, glContexts{nullptr, nullptr}
 {
+	screenViewMatrix = std::make_unique<CMatrix44f>();
+	screenProjMatrix = std::make_unique<CMatrix44f>();
+
 	verticalSync->WrapNotifyOnChange();
 	configHandler->NotifyOnChange(this, {"Fullscreen", "WindowBorderless"});
 }
@@ -263,6 +276,10 @@ CGlobalRendering::~CGlobalRendering()
 	glContexts[1] = nullptr;
 }
 
+void CGlobalRendering::PreKill()
+{
+	UniformConstants::GetInstance().Kill(); //unsafe to kill in ~CGlobalRendering()
+}
 
 SDL_Window* CGlobalRendering::CreateSDLWindow(const int2& winRes, const int2& minRes, const char* title, bool hidden) const
 {
@@ -688,32 +705,37 @@ void CGlobalRendering::CheckGLExtensions() const
 
 void CGlobalRendering::SetGLSupportFlags()
 {
-	const char* glVendor   = globalRenderingInfo.glVendor;
-	const char* glRenderer = globalRenderingInfo.glRenderer;
+	const std::string& glVendor = StringToLower(globalRenderingInfo.glVendor);
+	const std::string& glRenderer = StringToLower(globalRenderingInfo.glRenderer);
 
-	haveNvidia  = (StrCaseStr(  glVendor,  "nvidia ") != nullptr);
-	haveATI    |= (StrCaseStr(  glVendor,     "ati ") != nullptr);
-	haveATI    |= (StrCaseStr(  glVendor,     "amd ") != nullptr);
-	haveIntel   = (StrCaseStr(  glVendor,    "intel") != nullptr);
-	haveMesa   |= (StrCaseStr(glRenderer,    "mesa ") != nullptr);
-	haveMesa   |= (StrCaseStr(glRenderer, "gallium ") != nullptr);
+	haveAMD    = (  glVendor.find(   "ati ") != std::string::npos) || (  glVendor.find("amd ") != std::string::npos) ||
+		         (glRenderer.find("radeon ") != std::string::npos) || (glRenderer.find("amd ") != std::string::npos); //it's amazing how inconsistent AMD detection can be
+	haveIntel  = (  glVendor.find(  "intel") != std::string::npos);
+	haveNvidia = (  glVendor.find("nvidia ") != std::string::npos);
+	haveMesa   = (glRenderer.find(  "mesa ") != std::string::npos) || (glRenderer.find("gallium ") != std::string::npos);
 
-	if (haveATI) {
-		globalRenderingInfo.gpuName   = globalRenderingInfo.glRenderer;
-		globalRenderingInfo.gpuVendor = "ATI";
-	} else if (haveIntel) {
-		globalRenderingInfo.gpuName   = globalRenderingInfo.glRenderer;
+	if (haveAMD) {
+		globalRenderingInfo.gpuName = globalRenderingInfo.glRenderer;
+		globalRenderingInfo.gpuVendor = "AMD";
+	}
+	else if (haveIntel) {
+		globalRenderingInfo.gpuName = globalRenderingInfo.glRenderer;
 		globalRenderingInfo.gpuVendor = "Intel";
-	} else if (haveNvidia) {
-		globalRenderingInfo.gpuName   = globalRenderingInfo.glRenderer;
+	}
+	else if (haveNvidia) {
+		globalRenderingInfo.gpuName = globalRenderingInfo.glRenderer;
 		globalRenderingInfo.gpuVendor = "Nvidia";
-	} else if (haveMesa) {
-		globalRenderingInfo.gpuName   = globalRenderingInfo.glRenderer;
+	}
+	else if (haveMesa) {
+		globalRenderingInfo.gpuName = globalRenderingInfo.glRenderer;
 		globalRenderingInfo.gpuVendor = globalRenderingInfo.glVendor;
-	} else {
-		globalRenderingInfo.gpuName   = "Unknown";
+	}
+	else {
+		globalRenderingInfo.gpuName = "Unknown";
 		globalRenderingInfo.gpuVendor = "Unknown";
 	}
+
+	supportPersistentMapping = GLEW_ARB_buffer_storage;
 
 	// all modern ATI's support NPOTs
 	supportNonPowerOfTwoTex = GLEW_ARB_texture_non_power_of_two;
@@ -783,6 +805,8 @@ void CGlobalRendering::QueryGLMaxVals()
 	// some GLSL relevant information
 	glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &glslMaxUniformBufferBindings);
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,      &glslMaxUniformBufferSize);
+	glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &glslMaxStorageBufferBindings);
+	glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &glslMaxStorageBufferSize);
 	glGetIntegerv(GL_MAX_VARYING_FLOATS,          &glslMaxVaryings);
 	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS,          &glslMaxAttributes);
 	glGetIntegerv(GL_MAX_DRAW_BUFFERS,            &glslMaxDrawBuffers);
@@ -872,6 +896,8 @@ void CGlobalRendering::LogGLSupportInfo() const
 	LOG("\tmax. rec. indices/vertices   : %i/%i", glslMaxRecommendedIndices, glslMaxRecommendedVertices);
 	LOG("\tmax. uniform buffer-bindings : %i", glslMaxUniformBufferBindings);
 	LOG("\tmax. uniform block-size      : %iKB", glslMaxUniformBufferSize / 1024);
+	LOG("\tmax. storage buffer-bindings : %i", glslMaxStorageBufferBindings);
+	LOG("\tmax. storage block-size      : %iMB", glslMaxStorageBufferSize / (1024 * 1024));
 	LOG("\t");
 	LOG("\trun-time texture compression: %i", compressTextures);
 	LOG("\t");
@@ -1095,6 +1121,39 @@ void CGlobalRendering::UpdateGLConfigs()
 	verticalSync->SetInterval();
 }
 
+void CGlobalRendering::UpdateScreenMatrices()
+{
+	LOG("[GR::%s]", __func__);
+	// .x := screen width (meters), .y := eye-to-screen (meters)
+	static float2 screenParameters = { 0.36f, 0.60f };
+
+	const int remScreenSize = screenSizeY - winSizeY; // remaining desktop size (ssy >= wsy)
+	const int bottomWinCoor = remScreenSize - winPosY; // *bottom*-left origin
+
+	const float vpx = viewPosX + winPosX;
+	const float vpy = viewPosY + bottomWinCoor;
+	const float vsx = viewSizeX; // same as winSizeX except in dual-screen mode
+	const float vsy = viewSizeY; // same as winSizeY
+	const float ssx = screenSizeX;
+	const float ssy = screenSizeY;
+	const float hssx = 0.5f * ssx;
+	const float hssy = 0.5f * ssy;
+
+	const float zplane = screenParameters.y * (ssx / screenParameters.x);
+	const float znear = zplane * 0.5f;
+	const float zfar = zplane * 2.0f;
+	const float zfact = znear / zplane;
+
+	const float left = (vpx - hssx) * zfact;
+	const float bottom = (vpy - hssy) * zfact;
+	const float right = ((vpx + vsx) - hssx) * zfact;
+	const float top = ((vpy + vsy) - hssy) * zfact;
+
+	// translate s.t. (0,0,0) is on the zplane, on the window's bottom-left corner
+	*screenViewMatrix = CMatrix44f{ float3{left / zfact, bottom / zfact, -zplane} };
+	*screenProjMatrix = CMatrix44f::ClipPerspProj(left, right, bottom, top, znear, zfar, supportClipSpaceControl * 1.0f);
+}
+
 void CGlobalRendering::UpdateGLGeometry()
 {
 	LOG("[GR::%s][1] winSize=<%d,%d>", __func__, winSizeX, winSizeY);
@@ -1103,6 +1162,7 @@ void CGlobalRendering::UpdateGLGeometry()
 	SetDualScreenParams();
 	UpdateViewPortGeometry();
 	UpdatePixelGeometry();
+	UpdateScreenMatrices();
 
 	LOG("[GR::%s][2] winSize=<%d,%d>", __func__, winSizeX, winSizeY);
 }

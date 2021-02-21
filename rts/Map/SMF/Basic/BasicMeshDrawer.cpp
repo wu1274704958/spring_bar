@@ -188,9 +188,6 @@ void CBasicMeshDrawer::UploadPatchSquareGeometry(uint32_t n, uint32_t px, uint32
 		squareVBO.immutableStorage = true;
 		#endif
 
-		if (squareVBO.vboId == 0)
-			squareVAO.Generate();
-
 		squareVAO.Bind();
 		squareVBO.Bind(GL_ARRAY_BUFFER);
 		squareVBO.New((lodVerts * lodVerts) * sizeof(float3), GL_DYNAMIC_DRAW);
@@ -250,9 +247,6 @@ void CBasicMeshDrawer::UploadPatchBorderGeometry(uint32_t n, uint32_t px, uint32
 		VBO& borderVBO = meshPatch.borderVertexBuffers[MAP_BORDER_L][n].vbo;
 
 		{
-			if (borderVBO.vboId == 0)
-				borderVAO.Generate();
-
 			borderVAO.Bind();
 			borderVBO.Bind(GL_ARRAY_BUFFER);
 			borderVBO.New(lodVerts * sizeof(VA_TYPE_C) * 2, GL_DYNAMIC_DRAW);
@@ -300,9 +294,6 @@ void CBasicMeshDrawer::UploadPatchBorderGeometry(uint32_t n, uint32_t px, uint32
 		VBO& borderVBO = meshPatch.borderVertexBuffers[MAP_BORDER_R][n].vbo;
 
 		{
-			if (borderVBO.vboId == 0)
-				borderVAO.Generate();
-
 			borderVAO.Bind();
 			borderVBO.Bind(GL_ARRAY_BUFFER);
 			borderVBO.New(lodVerts * sizeof(VA_TYPE_C) * 2, GL_DYNAMIC_DRAW);
@@ -349,9 +340,6 @@ void CBasicMeshDrawer::UploadPatchBorderGeometry(uint32_t n, uint32_t px, uint32
 		VBO& borderVBO = meshPatch.borderVertexBuffers[MAP_BORDER_T][n].vbo;
 
 		{
-			if (borderVBO.vboId == 0)
-				borderVAO.Generate();
-
 			borderVAO.Bind();
 			borderVBO.Bind(GL_ARRAY_BUFFER);
 			borderVBO.New(lodVerts * sizeof(VA_TYPE_C) * 2, GL_DYNAMIC_DRAW);
@@ -397,9 +385,6 @@ void CBasicMeshDrawer::UploadPatchBorderGeometry(uint32_t n, uint32_t px, uint32
 		VBO& borderVBO = meshPatch.borderVertexBuffers[MAP_BORDER_B][n].vbo;
 
 		{
-			if (borderVBO.vboId == 0)
-				borderVAO.Generate();
-
 			borderVAO.Bind();
 			borderVBO.Bind(GL_ARRAY_BUFFER);
 			borderVBO.New(lodVerts * sizeof(VA_TYPE_C) * 2, GL_DYNAMIC_DRAW);
