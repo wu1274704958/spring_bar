@@ -159,6 +159,8 @@ bool VBO::Resize(GLsizeiptr newSize, GLenum newUsage)
 	if (newSize == bufSize && newUsage == usage)
 		return true;
 
+	newSize = GetAlignedSize(newSize);
+
 	// first call: no *BO exists yet to copy old data from, so use ::New() (faster)
 	if (bufSize == 0)
 		return New(newSize, newUsage, nullptr);
@@ -202,6 +204,8 @@ bool VBO::New(GLsizeiptr newSize, GLenum newUsage, const void* newData)
 {
 	assert(bound);
 	assert(!mapped || (newData == nullptr && newSize == bufSize && newUsage == usage));
+
+	newSize = GetAlignedSize(newSize);
 
 	// ATI interprets unsynchronized access differently; (un)mapping does not sync
 	mapUnsyncedBit = GL_MAP_UNSYNCHRONIZED_BIT * (1 - globalRendering->haveAMD);

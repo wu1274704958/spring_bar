@@ -1206,6 +1206,8 @@ void CGlobalRendering::InitGLState()
 		glAttribStatePtr->ViewPort(viewPosX, viewPosY, viewSizeX, viewSizeY);
 	}
 
+	UniformConstants::GetInstance().Init();
+
 	// this does not accomplish much
 	// SwapBuffers(true, true);
 	LogDisplayMode(sdlWindows[0]);

@@ -10,6 +10,7 @@
 
 #include "Lua/LuaObjectMaterial.h"
 #include "Rendering/GL/VBO.h"
+#include "Rendering/GL/VAO.h"
 #include "Sim/Misc/CollisionVolume.h"
 #include "System/Matrix44f.h"
 #include "System/type2.h"
@@ -335,6 +336,12 @@ public:
 	unsigned int vertexArray = 0;
 	unsigned int elemsBuffer = 0;
 	unsigned int indcsBuffer = 0;
+
+	std::unique_ptr<VAO> vao = nullptr;
+	std::unique_ptr<VBO> vertVBO = nullptr;
+	std::unique_ptr<VBO> indxVBO = nullptr;
+	//std::unique_ptr<VBO> instVBO = nullptr;
+
 	unsigned int vboNumVerts = 0;
 	unsigned int vboNumIndcs = 0;
 

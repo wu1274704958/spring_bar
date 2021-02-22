@@ -20,6 +20,10 @@
 #include "LuaShaders.h"
 #include "LuaTextures.h"
 #include "LuaUtils.h"
+#include "LuaMatrix.h"
+#include "LuaVAO.h"
+#include "LuaVBO.h"
+
 #include "Game/Camera.h"
 #include "Game/CameraHandler.h"
 #include "Game/UI/CommandColors.h"
@@ -423,6 +427,10 @@ bool LuaOpenGL::PushEntries(lua_State* L)
 	LuaShaders::PushEntries(L);
  	LuaFBOs::PushEntries(L);
  	LuaRBOs::PushEntries(L);
+
+	LuaMatrix::PushEntries(L);
+	LuaVAO::PushEntries(L);
+	LuaVBO::PushEntries(L);
 
 	LuaFonts::PushEntries(L);
 	return true;
