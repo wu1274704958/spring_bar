@@ -47,9 +47,10 @@ CR_REG_METADATA(LocalModel, (
 
 	CR_IGNORED(pmuFrameNum),
 	// reload
-	CR_IGNORED(vertexArray),
-	CR_IGNORED(elemsBuffer),
-	CR_IGNORED(indcsBuffer),
+	CR_IGNORED(vao),
+	CR_IGNORED(vertVBO),
+	CR_IGNORED(indxVBO),
+
 	CR_IGNORED(vboNumVerts),
 	CR_IGNORED(vboNumIndcs)
 ))
@@ -60,16 +61,9 @@ CR_REG_METADATA(LocalModel, (
  */
 void S3DModel::DeleteBuffers()
 {
-	if (vertexArray != 0)
-		glDeleteVertexArrays(1, &vertexArray);
-	if (elemsBuffer != 0)
-		glDeleteBuffers(1, &elemsBuffer);
-	if (indcsBuffer != 0)
-		glDeleteBuffers(1, &indcsBuffer);
-
-	vertexArray = 0;
-	elemsBuffer = 0;
-	indcsBuffer = 0;
+	vao.release();
+	vertVBO.release();
+	indxVBO.release();
 }
 
 void S3DModel::UploadBuffers()
@@ -101,15 +95,14 @@ void S3DModel::UploadBuffers()
 		vboNumIndcs = numIndcs;
 	}
 
-	glGenVertexArrays(1, &vertexArray);
-	glBindVertexArray(vertexArray);
-
+	vao = std::make_unique<VAO>();
+	vao->Bind();
 
 	{
 		// geometry
-		glGenBuffers(1, &elemsBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, elemsBuffer);
-		glBufferData(GL_ARRAY_BUFFER, vboNumVerts * sizeof(SVertexData), nullptr, GL_STATIC_DRAW);
+		vertVBO = std::make_unique<VBO>(GL_ARRAY_BUFFER, false, true);
+		vertVBO->Bind();
+		vertVBO->New(vboNumVerts * sizeof(SVertexData), GL_STATIC_DRAW, nullptr);
 
 		for (size_t i = 0, n = pieceObjects.size(); i < n; i++) {
 			const S3DModelPiece* omp = pieceObjects[i];
@@ -130,9 +123,9 @@ void S3DModel::UploadBuffers()
 	}
 	{
 		// indices
-		glGenBuffers(1, &indcsBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indcsBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, vboNumIndcs * sizeof(uint32_t), nullptr, GL_STATIC_DRAW);
+		indxVBO	= std::make_unique<VBO>(GL_ELEMENT_ARRAY_BUFFER, false, true);
+		indxVBO->Bind();
+		indxVBO->New(vboNumIndcs * sizeof(uint32_t), GL_STATIC_DRAW, nullptr);
 
 		for (const S3DModelPiece* omp : pieceObjects) {
 
@@ -150,11 +143,11 @@ void S3DModel::UploadBuffers()
 	}
 
 	EnableAttribs();
-	glBindVertexArray(0);
+	vao->Unbind();
 	DisableAttribs();
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	indxVBO->Unbind();
+	vertVBO->Unbind();
 }
 
 
@@ -204,9 +197,9 @@ void S3DModel::Draw() const
 	// draw pieces in their static bind-pose (ie. without script-transforms)
 	// this now requires setting up bind-pose matrices via IUnitRenderState
 	// TODO: should convert S3O's that do not use PRIMTYPE=TRIANGLES?
-	glBindVertexArray(vertexArray);
+	vao->Bind();
 	glDrawElements(GL_TRIANGLES, vboNumIndcs, GL_UNSIGNED_INT, nullptr);
-	glBindVertexArray(0);
+	vao->Unbind();
 }
 
 void S3DModel::DrawPiece(const S3DModelPiece* omp) const
@@ -216,9 +209,9 @@ void S3DModel::DrawPiece(const S3DModelPiece* omp) const
 	const std::vector<unsigned int>& indcs = omp->GetVertexIndices();
 
 	// draw the buffer sub-region corresponding to this piece
-	glBindVertexArray(vertexArray);
+	vao->Bind();
 	glDrawElements(GL_TRIANGLES, indcs.size(), GL_UNSIGNED_INT, VA_TYPE_OFFSET(uint32_t, omp->vboStartIndx));
-	glBindVertexArray(0);
+	vao->Unbind();
 }
 
 // only used by projectiles with the PF_Recursive flag
@@ -462,7 +455,7 @@ void LocalModel::UpdatePieceMatrices(unsigned int gsFrameNum)
 
 void LocalModel::Draw() const
 {
-	glBindVertexArray(vertexArray);
+	vao->Bind();
 
 	#if 0
 	switch (primType) {
@@ -477,10 +470,10 @@ void LocalModel::Draw() const
 	glDrawElements(GL_TRIANGLES, vboNumIndcs, GL_UNSIGNED_INT, nullptr);
 	#endif
 
-	glBindVertexArray(0);
+	vao->Unbind();
 }
 
-void LocalModel::DrawPiece(const LocalModelPiece* lmp) const 
+void LocalModel::DrawPiece(const LocalModelPiece* lmp) const
 {
 	assert((lmp - &pieces[0]) < pieces.size());
 
@@ -488,9 +481,9 @@ void LocalModel::DrawPiece(const LocalModelPiece* lmp) const
 	const std::vector<unsigned int>& indcs = omp->GetVertexIndices();
 
 	// draw the buffer sub-region corresponding to this piece
-	glBindVertexArray(vertexArray);
+	vao->Bind();
 	glDrawElements(GL_TRIANGLES, indcs.size(), GL_UNSIGNED_INT, VA_TYPE_OFFSET(uint32_t, omp->vboStartIndx));
-	glBindVertexArray(0);
+	vao->Unbind();
 }
 
 
@@ -503,9 +496,11 @@ void LocalModel::SetModel(const S3DModel* model, bool initialize)
 	assert(model->numPieces >= 1);
 
 	pmuFrameNum = -1u;
-	vertexArray = model->vertexArray;
-	elemsBuffer = model->elemsBuffer;
-	indcsBuffer = model->indcsBuffer;
+
+	vao = model->vao.get();
+	vertVBO = model->vertVBO.get();
+	indxVBO = model->indxVBO.get();
+
 	vboNumVerts = model->vboNumVerts;
 	vboNumIndcs = model->vboNumIndcs;
 

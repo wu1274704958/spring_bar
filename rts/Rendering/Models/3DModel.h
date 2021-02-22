@@ -254,9 +254,10 @@ struct S3DModel
 		numPieces = m.numPieces;
 		textureType = m.textureType;
 
-		vertexArray = m.vertexArray; m.vertexArray = 0;
-		elemsBuffer = m.elemsBuffer; m.elemsBuffer = 0;
-		indcsBuffer = m.indcsBuffer; m.indcsBuffer = 0;
+		vao = std::move(m.vao);
+		vertVBO = std::move(m.vertVBO);
+		indxVBO = std::move(m.indxVBO);
+
 		vboNumVerts = m.vboNumVerts;
 		vboNumIndcs = m.vboNumIndcs;
 
@@ -294,12 +295,12 @@ struct S3DModel
 	void EnableAttribs() const;
 	void DisableAttribs() const;
 
-	void BindVertexArray() const { glBindVertexArray(vertexArray); }
-	void BindElemsBuffer() const { glBindBuffer(GL_ARRAY_BUFFER, elemsBuffer); }
-	void BindIndcsBuffer() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indcsBuffer); }
-	void UnbindVertexArray() const { glBindVertexArray(0); }
-	void UnbindElemsBuffer() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
-	void UnbindIndcsBuffer() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
+	void BindVertexArray() const { vao->Bind(); }
+	void BindElemsBuffer() const { vertVBO->Bind(); }
+	void BindIndcsBuffer() const { indxVBO->Bind(); }
+	void UnbindVertexArray() const { vao->Unbind(); }
+	void UnbindElemsBuffer() const { vertVBO->Unbind(); }
+	void UnbindIndcsBuffer() const { indxVBO->Unbind(); }
 
 	// minor hack for piece-projectiles, saves a uniform
 	// void SetPieceMatrixWeight(size_t i, float w) const { const_cast<CMatrix44f&>(pieceMatrices[i])[15] = w; }
@@ -318,7 +319,7 @@ struct S3DModel
 
 	const std::vector<CMatrix44f>& GetPieceMatrices() const { return pieceMatrices; }
 
-	bool UploadedBuffers() const { return (vertexArray != 0); }
+	bool UploadedBuffers() const { return (vao != nullptr); }
 
 public:
 	std::string name;
@@ -332,10 +333,6 @@ public:
 	int id;                     /// unsynced ID, starting with 1
 	int numPieces;
 	int textureType;            /// FIXME: MAKE S3O ONLY (0 = 3DO, otherwise S3O or ASSIMP)
-
-	unsigned int vertexArray = 0;
-	unsigned int elemsBuffer = 0;
-	unsigned int indcsBuffer = 0;
 
 	std::unique_ptr<VAO> vao = nullptr;
 	std::unique_ptr<VBO> vertVBO = nullptr;
@@ -541,9 +538,10 @@ private:
 	// simframe at which unsynced piece-matrices were last updated
 	unsigned int pmuFrameNum = -1u;
 	// per-instance shallow copies of S3DModel::*
-	unsigned int vertexArray = 0;
-	unsigned int elemsBuffer = 0;
-	unsigned int indcsBuffer = 0;
+	VAO* vao;
+	VBO* vertVBO;
+	VBO* indxVBO;
+
 	unsigned int vboNumVerts = 0;
 	unsigned int vboNumIndcs = 0;
 };
