@@ -455,6 +455,8 @@ void LocalModel::UpdatePieceMatrices(unsigned int gsFrameNum)
 
 void LocalModel::Draw() const
 {
+	assert(vao);
+
 	vao->Bind();
 
 	#if 0
@@ -475,6 +477,7 @@ void LocalModel::Draw() const
 
 void LocalModel::DrawPiece(const LocalModelPiece* lmp) const
 {
+	assert(vao);
 	assert((lmp - &pieces[0]) < pieces.size());
 
 	const S3DModelPiece* omp = lmp->original;

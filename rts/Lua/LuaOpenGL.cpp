@@ -348,6 +348,9 @@ bool LuaOpenGL::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(Rect);
 	REGISTER_LUA_CFUNC(TexRect);
 
+	REGISTER_LUA_CFUNC(DispatchCompute);
+	REGISTER_LUA_CFUNC(MemoryBarrier);
+
 	REGISTER_LUA_CFUNC(BeginText);
 	REGISTER_LUA_CFUNC(EndText);
 	REGISTER_LUA_CFUNC(DrawBufferedText);
@@ -379,7 +382,7 @@ bool LuaOpenGL::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(DrawGroundCircle);
 	REGISTER_LUA_CFUNC(DrawGroundQuad);
 
-	REGISTER_LUA_CFUNC(ClipDist);
+	REGISTER_LUA_CFUNC(ClipDistance);
 
 	REGISTER_LUA_CFUNC(MatrixMode);
 	REGISTER_LUA_CFUNC(LoadIdentity);
@@ -1824,6 +1827,48 @@ int LuaOpenGL::TexRect(lua_State* L)
 	return 0;
 }
 
+int LuaOpenGL::DispatchCompute(lua_State* L)
+{
+	const GLuint numGroupX = (GLuint)luaL_checknumber(L, 1);
+	const GLuint numGroupY = (GLuint)luaL_checknumber(L, 2);
+	const GLuint numGroupZ = (GLuint)luaL_checknumber(L, 3);
+
+	const auto maxCompWGFunc = []() {
+		std::array<GLint, 3> maxNumGroups;
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &maxNumGroups[0]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &maxNumGroups[1]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &maxNumGroups[2]);
+		return maxNumGroups;
+	};
+
+	static std::array<GLint, 3> maxNumGroups = maxCompWGFunc();
+
+	if (numGroupX < 0 && numGroupX > maxNumGroups[0] ||
+		numGroupY < 0 && numGroupY > maxNumGroups[1] ||
+		numGroupZ < 0 && numGroupZ > maxNumGroups[2])
+		luaL_error(L, "%s Incorrect number of work groups specified x: 0 > %d < %d; y: 0 > %d < %d; z: 0 > %d < %d", __func__, numGroupX, maxNumGroups[0], numGroupY, maxNumGroups[1], numGroupZ, maxNumGroups[2]);
+
+	glDispatchCompute(numGroupX, numGroupY, numGroupZ);
+
+	GLbitfield barriers = (GLbitfield)luaL_optint(L, 1, 4);
+	//skip checking the correctness of values :)
+
+	if (barriers > 0u)
+		glMemoryBarrier(barriers);
+
+	return 0;
+}
+
+int LuaOpenGL::MemoryBarrier(lua_State* L)
+{
+	GLbitfield barriers = (GLbitfield)luaL_optint(L, 1, 0);
+	//skip checking the correctness of values :)
+
+	if (barriers > 0u)
+		glMemoryBarrier(barriers);
+
+	return 0;
+}
 
 /******************************************************************************/
 
@@ -2965,21 +3010,25 @@ int LuaOpenGL::Billboard(lua_State* L)
 
 /******************************************************************************/
 
-int LuaOpenGL::ClipDist(lua_State* L)
-{
+int LuaOpenGL::ClipDistance(lua_State* L) {
 	CheckDrawingEnabled(L, __func__);
 
-	const int index = luaL_checkint(L, 1);
+	const int clipId = luaL_checkint(L, 1);
+	if ((clipId < 1) || (clipId > 2)) { //follow ClipPlane() for consistency
+		luaL_error(L, "gl.ClipDistance: bad clip number (use 1 or 2)");
+	}
 
-	if ((index < 1) || (index > 8))
-		luaL_error(L, "[gl.%s] bad clip-distance index %d", __func__, index);
-	if (!lua_isboolean(L, 2))
-		return 0;
+	if (!lua_isboolean(L, 2)) {
+		luaL_error(L, "gl.ClipDistance: second param must be boolean");
+	}
+
+	const GLenum gl_clipId = GL_CLIP_DISTANCE4 + clipId - 1;
 
 	if (lua_toboolean(L, 2)) {
-		glEnable(GL_CLIP_DISTANCE0 + (index - 1));
-	} else {
-		glDisable(GL_CLIP_DISTANCE0 + (index - 1));
+		glEnable(gl_clipId);
+	}
+	else {
+		glDisable(gl_clipId);
 	}
 
 	return 0;

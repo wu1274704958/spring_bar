@@ -212,6 +212,9 @@ class LuaOpenGL {
 		static int Rect(lua_State* L);
 		static int TexRect(lua_State* L);
 
+		static int DispatchCompute(lua_State* L);
+		static int MemoryBarrier(lua_State* L);
+
 		static int BeginText(lua_State* L);
 		static int EndText(lua_State* L);
 		static int DrawBufferedText(lua_State* L);
@@ -250,7 +253,7 @@ class LuaOpenGL {
 		static int DrawGroundCircle(lua_State* L);
 		static int DrawGroundQuad(lua_State* L);
 
-		static int ClipDist(lua_State* L);
+		static int ClipDistance(lua_State* L);
 
 		static int MatrixMode(lua_State* L);
 		static int LoadIdentity(lua_State* L);

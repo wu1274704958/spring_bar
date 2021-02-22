@@ -54,7 +54,6 @@ public:
 	};
 	static bool Supported() {
 		static bool supported = VBO::IsSupported(GL_UNIFORM_BUFFER) && GLEW_ARB_shading_language_420pack; //UBO && UBO layout(binding=x)
-		return false;
 		return supported;
 	}
 public:
