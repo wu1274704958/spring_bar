@@ -13,7 +13,7 @@ struct SDL_version;
 struct SDL_Window;
 typedef void* SDL_GLContext;
 
-struct CMatrix44f;
+class CMatrix44f;
 
 /**
  * @brief Globally accessible unsynced, rendering related data
