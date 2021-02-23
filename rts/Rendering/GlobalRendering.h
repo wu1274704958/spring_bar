@@ -4,6 +4,7 @@
 #define _GLOBAL_RENDERING_H
 
 #include <string>
+#include <memory>
 
 #include "System/creg/creg_cond.h"
 #include "System/Misc/SpringTime.h"
