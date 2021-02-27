@@ -98,8 +98,7 @@ public:
 	 *                  FONT_TOP | FONT_ASCENDER | FONT_BOTTOM) |
 	 *                 FONT_NEAREST | FONT_OUTLINE | FONT_SHADOW
 	 */
-	void glPrint(float x, float y, float sx, float sy, const int options, const std::string& str);
-	void glPrint(float x, float y, float s, const int options, const std::string& str) { glPrint(x, y, s, s, options, str); }
+	void glPrint(float x, float y, float s, const int options, const std::string& str);
 	void glPrintTable(float x, float y, float s, const int options, const std::string& str);
 	void glFormat(float x, float y, float s, const int options, const char* fmt, ...);
 

@@ -11,7 +11,6 @@
 
 #include "LuaOpenGL.h"
 
-#include "Rendering/GlobalRendering.h"
 #include "Rendering/GL/myGL.h"
 #include "Rendering/Fonts/glFont.h"
 #include "System/Exceptions.h"
@@ -211,11 +210,11 @@ int LuaFonts::Print(lua_State* L)
 
 	const std::string text(luaL_checkstring(L, 2), lua_strlen(L, 2));
 
-	const float xpos = luaL_checkfloat(L, 3) / globalRendering->screenSizeX;
-	const float ypos = luaL_checkfloat(L, 4) / globalRendering->screenSizeY;
+	const float xpos = luaL_checkfloat(L, 3);
+	const float ypos = luaL_checkfloat(L, 4);
 	const float size = luaL_optfloat(L, 5, f->GetSize());
 
-	unsigned int options = FONT_NORM | FONT_NEAREST;
+	unsigned int options = 0;
 
 	if ((lua_gettop(L) >= 6) && lua_isstring(L, 6)) {
 		const char* c = lua_tostring(L, 6);
@@ -236,25 +235,17 @@ int LuaFonts::Print(lua_State* L)
 				case 'o':
 				case 'O': { options |= FONT_OUTLINE;   } break;
 
-				case 'n': { options ^= FONT_NEAREST;   } break;
+				case 'n': { options |= FONT_NEAREST;   } break;
 				case 'B': { options |= FONT_BUFFERED;  } break; // for DrawBuffered
 
-				case 'N': { options ^= FONT_NORM;      } break;
+				case 'N': { options |= FONT_NORM;      } break;
 				case 'S': { options |= FONT_SCALE;     } break;
 				default: break;
 			}
 		}
 	}
 
-	float sx = size;
-	float sy = size;
-
-	if ((options & FONT_NORM) == 0) {
-		sx /= globalRendering->screenSizeX * globalRendering->screenSizeX;
-		sy /= globalRendering->screenSizeY * globalRendering->screenSizeY;
-	}
-
-	f->glPrint(xpos, ypos, sx, sy, options, text);
+	f->glPrint(xpos, ypos, size, options, text);
 	return 0;
 }
 
