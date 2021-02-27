@@ -20,7 +20,7 @@ namespace GL {
 	static_assert(sizeof(VA_TYPE_0) == sizeof(float3), "");
 	static_assert(sizeof(VA_TYPE_0) == (sizeof(float) * 3), "");
 	const static std::array<Shader::ShaderInput, 1> VA_TYPE_0_ATTRS = {{
-		{0,  3, GL_FLOAT,  (sizeof(float) * 3),  "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
+		{0,  3, GL_FLOAT,  (sizeof(float) * 3), false, "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
 	}};
 
 
@@ -33,14 +33,14 @@ namespace GL {
 	#else
 	static_assert(sizeof(VA_TYPE_C) == (sizeof(float) * 3 + sizeof(uint32_t)), "");
 	const static std::array<Shader::ShaderInput, 2> VA_TYPE_C_ATTRS = {{
-		{0,  3, GL_FLOAT        ,  (sizeof(float) * 3 + sizeof(uint8_t) * 4),  "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
-		{1,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 3 + sizeof(uint8_t) * 4),  "a_color_rgba", VA_TYPE_OFFSET(float, 3)},
+		{0,  3, GL_FLOAT        ,  (sizeof(float) * 3 + sizeof(uint8_t) * 4), false, "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
+		{1,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 3 + sizeof(uint8_t) * 4), true,  "a_color_rgba", VA_TYPE_OFFSET(float, 3)},
 	}};
 
 	// flat-shaded variant
 	const static std::array<Shader::ShaderInput, 2> VA_TYPE_FC_ATTRS = {{
-		{0,  3, GL_FLOAT        ,  (sizeof(float) * 3 + sizeof(uint8_t) * 4),  "a_vertex_xyz"     , VA_TYPE_OFFSET(float, 0)},
-		{1,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 3 + sizeof(uint8_t) * 4),  "a_color_rgba_flat", VA_TYPE_OFFSET(float, 3)},
+		{0,  3, GL_FLOAT        ,  (sizeof(float) * 3 + sizeof(uint8_t) * 4), false, "a_vertex_xyz"     , VA_TYPE_OFFSET(float, 0)},
+		{1,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 3 + sizeof(uint8_t) * 4), true,  "a_color_rgba_flat", VA_TYPE_OFFSET(float, 3)},
 	}};
 	#endif
 
@@ -48,25 +48,25 @@ namespace GL {
 	static_assert(sizeof(VA_TYPE_T) == (sizeof(float3) + sizeof(float) * 2), "");
 	static_assert(sizeof(VA_TYPE_T) == (sizeof(float) * 5), ""); // 5 = 3 + 2
 	const static std::array<Shader::ShaderInput, 2> VA_TYPE_T_ATTRS = {{
-		{0,  3, GL_FLOAT,  (sizeof(float) * 5),  "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
-		{1,  2, GL_FLOAT,  (sizeof(float) * 5),  "a_texcoor_st", VA_TYPE_OFFSET(float, 3)},
+		{0,  3, GL_FLOAT,  (sizeof(float) * 5), false,  "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
+		{1,  2, GL_FLOAT,  (sizeof(float) * 5), false,  "a_texcoor_st", VA_TYPE_OFFSET(float, 3)},
 	}};
 
 
 	static_assert(sizeof(VA_TYPE_T4) == (sizeof(float3) + sizeof(float4)), "");
 	static_assert(sizeof(VA_TYPE_T4) == (sizeof(float) * 7), ""); // 7 = 3 + 4
 	const static std::array<Shader::ShaderInput, 2> VA_TYPE_T4_ATTRS = {{
-		{0,  3, GL_FLOAT,  (sizeof(float) * 7),  "a_vertex_xyz"  , VA_TYPE_OFFSET(float, 0)},
-		{1,  4, GL_FLOAT,  (sizeof(float) * 7),  "a_texcoor_stuv", VA_TYPE_OFFSET(float, 3)},
+		{0,  3, GL_FLOAT,  (sizeof(float) * 7), false, "a_vertex_xyz"  , VA_TYPE_OFFSET(float, 0)},
+		{1,  4, GL_FLOAT,  (sizeof(float) * 7), false, "a_texcoor_stuv", VA_TYPE_OFFSET(float, 3)},
 	}};
 
 
 	static_assert(sizeof(VA_TYPE_TN) == (sizeof(float3) * 2 + sizeof(float) * 2), "");
 	static_assert(sizeof(VA_TYPE_TN) == (sizeof(float) * 8), ""); // 8 = 3 + 2 + 3
 	const static std::array<Shader::ShaderInput, 3> VA_TYPE_TN_ATTRS = {{
-		{0,  3, GL_FLOAT,  (sizeof(float) * 8),  "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
-		{1,  2, GL_FLOAT,  (sizeof(float) * 8),  "a_texcoor_st", VA_TYPE_OFFSET(float, 3)},
-		{2,  3, GL_FLOAT,  (sizeof(float) * 8),  "a_normal_xyz", VA_TYPE_OFFSET(float, 5)},
+		{0,  3, GL_FLOAT,  (sizeof(float) * 8), false, "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
+		{1,  2, GL_FLOAT,  (sizeof(float) * 8), false, "a_texcoor_st", VA_TYPE_OFFSET(float, 3)},
+		{2,  3, GL_FLOAT,  (sizeof(float) * 8), false, "a_normal_xyz", VA_TYPE_OFFSET(float, 5)},
 	}};
 
 
@@ -80,23 +80,23 @@ namespace GL {
 	#else
 	static_assert(sizeof(VA_TYPE_TC) == (sizeof(float) * (3 + 2) + sizeof(uint32_t)), "");
 	const static std::array<Shader::ShaderInput, 3> VA_TYPE_TC_ATTRS = {{
-		{0,  3, GL_FLOAT        ,  (sizeof(float) * 5 + sizeof(uint8_t) * 4),  "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
-		{1,  2, GL_FLOAT        ,  (sizeof(float) * 5 + sizeof(uint8_t) * 4),  "a_texcoor_st", VA_TYPE_OFFSET(float, 3)},
-		{2,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 5 + sizeof(uint8_t) * 4),  "a_color_rgba", VA_TYPE_OFFSET(float, 5)},
+		{0,  3, GL_FLOAT        ,  (sizeof(float) * 5 + sizeof(uint8_t) * 4), false, "a_vertex_xyz", VA_TYPE_OFFSET(float, 0)},
+		{1,  2, GL_FLOAT        ,  (sizeof(float) * 5 + sizeof(uint8_t) * 4), false, "a_texcoor_st", VA_TYPE_OFFSET(float, 3)},
+		{2,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 5 + sizeof(uint8_t) * 4), true , "a_color_rgba", VA_TYPE_OFFSET(float, 5)},
 	}};
 	#endif
 
 
 	static_assert(sizeof(VA_TYPE_2d0) == (sizeof(float) * 2), "");
 	const static std::array<Shader::ShaderInput, 1> VA_TYPE_2D0_ATTRS = {{
-		{0,  2, GL_FLOAT,  (sizeof(float) * 2),  "a_vertex_xy", VA_TYPE_OFFSET(float, 0)},
+		{0,  2, GL_FLOAT,  (sizeof(float) * 2), false, "a_vertex_xy", VA_TYPE_OFFSET(float, 0)},
 	}};
 
 
 	static_assert(sizeof(VA_TYPE_2dT) == (sizeof(float) * 4), ""); // 4 = 2 + 2
 	const static std::array<Shader::ShaderInput, 2> VA_TYPE_2DT_ATTRS = {{
-		{0,  2, GL_FLOAT,  (sizeof(float) * 4),  "a_vertex_xy" , VA_TYPE_OFFSET(float, 0)},
-		{1,  2, GL_FLOAT,  (sizeof(float) * 4),  "a_texcoor_st", VA_TYPE_OFFSET(float, 2)},
+		{0,  2, GL_FLOAT,  (sizeof(float) * 4), false, "a_vertex_xy" , VA_TYPE_OFFSET(float, 0)},
+		{1,  2, GL_FLOAT,  (sizeof(float) * 4), false, "a_texcoor_st", VA_TYPE_OFFSET(float, 2)},
 	}};
 
 
@@ -110,20 +110,20 @@ namespace GL {
 	#else
 	static_assert(sizeof(VA_TYPE_2dTC) == (sizeof(float) * (2 + 2) + sizeof(uint32_t)), "");
 	const static std::array<Shader::ShaderInput, 3> VA_TYPE_2DTC_ATTRS = {{
-		{0,  2, GL_FLOAT        ,  (sizeof(float) * 4 + sizeof(uint8_t) * 4),  "a_vertex_xy" , VA_TYPE_OFFSET(float, 0)},
-		{1,  2, GL_FLOAT        ,  (sizeof(float) * 4 + sizeof(uint8_t) * 4),  "a_texcoor_st", VA_TYPE_OFFSET(float, 2)},
-		{2,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 4 + sizeof(uint8_t) * 4),  "a_color_rgba", VA_TYPE_OFFSET(float, 4)},
+		{0,  2, GL_FLOAT        ,  (sizeof(float) * 4 + sizeof(uint8_t) * 4), false, "a_vertex_xy" , VA_TYPE_OFFSET(float, 0)},
+		{1,  2, GL_FLOAT        ,  (sizeof(float) * 4 + sizeof(uint8_t) * 4), false, "a_texcoor_st", VA_TYPE_OFFSET(float, 2)},
+		{2,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 4 + sizeof(uint8_t) * 4), true , "a_color_rgba", VA_TYPE_OFFSET(float, 4)},
 	}};
 	#endif
 
 
 	static_assert(sizeof(VA_TYPE_L) == (sizeof(float) * (4 + 3 + 4) + sizeof(uint32_t) * (1 + 1)), "");
 	const static std::array<Shader::ShaderInput, 5> VA_TYPE_L_ATTRS = {{
-		{0,  4, GL_FLOAT        ,  (sizeof(float) * 11 + sizeof(uint8_t) * 8),  "a_vertex_xyzw" , VA_TYPE_OFFSET(float,  0)},
-		{1,  3, GL_FLOAT        ,  (sizeof(float) * 11 + sizeof(uint8_t) * 8),  "a_normal_xyz"  , VA_TYPE_OFFSET(float,  4)},
-		{2,  4, GL_FLOAT        ,  (sizeof(float) * 11 + sizeof(uint8_t) * 8),  "a_texcoor_stuv", VA_TYPE_OFFSET(float,  7)},
-		{3,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 11 + sizeof(uint8_t) * 8),  "a_color0_rgba" , VA_TYPE_OFFSET(float, 11)},
-		{4,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 11 + sizeof(uint8_t) * 8),  "a_color1_rgba" , VA_TYPE_OFFSET(float, 12)},
+		{0,  4, GL_FLOAT        ,  (sizeof(float) * 11 + sizeof(uint8_t) * 8), false, "a_vertex_xyzw" , VA_TYPE_OFFSET(float,  0)},
+		{1,  3, GL_FLOAT        ,  (sizeof(float) * 11 + sizeof(uint8_t) * 8), false, "a_normal_xyz"  , VA_TYPE_OFFSET(float,  4)},
+		{2,  4, GL_FLOAT        ,  (sizeof(float) * 11 + sizeof(uint8_t) * 8), false, "a_texcoor_stuv", VA_TYPE_OFFSET(float,  7)},
+		{3,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 11 + sizeof(uint8_t) * 8), true , "a_color0_rgba" , VA_TYPE_OFFSET(float, 11)},
+		{4,  4, GL_UNSIGNED_BYTE,  (sizeof(float) * 11 + sizeof(uint8_t) * 8), true , "a_color1_rgba" , VA_TYPE_OFFSET(float, 12)},
 	}};
 
 

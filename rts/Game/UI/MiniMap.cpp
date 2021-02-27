@@ -188,8 +188,8 @@ void CMiniMap::LoadBuffer()
 		{{0.0f, 0.0f}, {0.0f, 1.0f}}, // tl
 	}};
 	const std::array<MiniMapAttrType, 2> attrs = {{
-		{0,  2, GL_FLOAT,  (sizeof(float) * 4),  "a_vertex_pos", VA_TYPE_OFFSET(float, 0)},
-		{1,  2, GL_FLOAT,  (sizeof(float) * 4),  "a_tex_coords", VA_TYPE_OFFSET(float, 2)},
+		{0,  2, GL_FLOAT,  (sizeof(float) * 4), false, "a_vertex_pos", VA_TYPE_OFFSET(float, 0)},
+		{1,  2, GL_FLOAT,  (sizeof(float) * 4), false, "a_tex_coords", VA_TYPE_OFFSET(float, 2)},
 	}};
 
 	miniMap.Init(false);

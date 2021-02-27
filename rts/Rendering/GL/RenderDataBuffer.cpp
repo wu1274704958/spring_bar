@@ -91,13 +91,13 @@ void GL::InitRenderBuffers() {
 
 	for (int i = 0; i < GL::NUM_RENDER_BUFFERS; i++) {
 		CREATE_SHADER( 0, i, "", "\tf_color_rgba = vec4(1.0, 1.0, 1.0, 1.0);\n");
-		CREATE_SHADER( C, i, "", "\tf_color_rgba = v_color_rgba      * (1.0 / 255.0);\n");
-		CREATE_SHADER(FC, i, "", "\tf_color_rgba = v_color_rgba_flat * (1.0 / 255.0);\n");
+		CREATE_SHADER( C, i, "", "\tf_color_rgba = v_color_rgba;\n");
+		CREATE_SHADER(FC, i, "", "\tf_color_rgba = v_color_rgba_flat;\n");
 		CREATE_SHADER( T, i, "", "\tf_color_rgba = texture(u_tex0, v_texcoor_st);\n");
 
 		CREATE_SHADER(T4, i, "", "\tf_color_rgba = texture(u_tex0, v_texcoor_stuv.st);\n");
 		CREATE_SHADER(TN, i, "", "\tf_color_rgba = texture(u_tex0, v_texcoor_st);\n");
-		CREATE_SHADER(TC, i, "", "\tf_color_rgba = texture(u_tex0, v_texcoor_st) * v_color_rgba * (1.0 / 255.0);\n");
+		CREATE_SHADER(TC, i, "", "\tf_color_rgba = texture(u_tex0, v_texcoor_st) * v_color_rgba;\n");
 
 		CREATE_SHADER(2D0, i, "", "\tf_color_rgba = vec4(1.0, 1.0, 1.0, 1.0);\n");
 		CREATE_SHADER(2DT, i, "", "\tf_color_rgba = texture(u_tex0, v_texcoor_st);\n");
@@ -195,7 +195,7 @@ void GL::RenderDataBuffer::EnableAttribs(size_t numAttrs, const Shader::ShaderIn
 		const Shader::ShaderInput& a = rawAttrs[n];
 
 		glEnableVertexAttribArray(a.index);
-		glVertexAttribPointer(a.index, a.count, a.type, false, a.stride, a.data);
+		glVertexAttribPointer(a.index, a.count, a.type, a.normalize, a.stride, a.data);
 	}
 }
 

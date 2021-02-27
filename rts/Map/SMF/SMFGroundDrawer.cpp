@@ -233,10 +233,9 @@ void CSMFGroundDrawer::CreateWaterPlanes(bool camOutsideMap) {
 			"\tgl_Position = u_proj_mat * u_movi_mat * vec4(a_vertex_xyz + vec3(0.0, u_plane_offset, 0.0), 1.0);\n"
 			"\tv_color_rgba = a_color_rgba;\n";
 		const char* fsVars =
-			"uniform float u_gamma_exponent;\n"
-			"const float v_color_mult = 1.0 / 255.0;\n";
+			"uniform float u_gamma_exponent;\n";
 		const char* fsCode =
-			"\tf_color_rgba = v_color_rgba * v_color_mult;\n"
+			"\tf_color_rgba = v_color_rgba;\n"
 			"\tf_color_rgba.rgb = pow(f_color_rgba.rgb, vec3(u_gamma_exponent));\n";
 
 		GL::RenderDataBuffer::FormatShaderC(vsBuf, vsBuf + sizeof(vsBuf), "", vsVars, vsCode, "VS");

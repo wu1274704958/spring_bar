@@ -67,8 +67,8 @@ void CSkyBox::LoadBuffer()
 	const std::string& fsText = Shader::GetShaderSource("GLSL/SkyBoxFragProg.glsl");
 
 	const std::array<SkyBoxAttrType, 2> vertAttrs = {{
-		{0,  2, GL_FLOAT,  (sizeof(float) * 5),  "a_vertex_xy"  , VA_TYPE_OFFSET(float, 0)},
-		{1,  3, GL_FLOAT,  (sizeof(float) * 5),  "a_texcoor_xyz", VA_TYPE_OFFSET(float, 2)},
+		{0,  2, GL_FLOAT,  (sizeof(float) * 5), false, "a_vertex_xy"  , VA_TYPE_OFFSET(float, 0)},
+		{1,  3, GL_FLOAT,  (sizeof(float) * 5), false, "a_texcoor_xyz", VA_TYPE_OFFSET(float, 2)},
 	}};
 
 	static GL::RenderDataBuffer skyBuf;

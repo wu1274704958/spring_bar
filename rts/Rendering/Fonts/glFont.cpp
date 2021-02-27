@@ -167,9 +167,8 @@ CglFont::CglFont(const std::string& fontFile, int size, int _outlineWidth, float
 
 		// color attribs are not normalized
 		const char* fsVars =
-			"const float v_color_mult = 1.0 / 255.0;\n"
 			"uniform mat2 u_txcd_mat;\n";
-		const char* fsCode = "\tf_color_rgba = (v_color_rgba * v_color_mult) * vec4(1.0, 1.0, 1.0, texture(u_tex0, u_txcd_mat * v_texcoor_st).r);\n";
+		const char* fsCode = "\tf_color_rgba = (v_color_rgba) * vec4(1.0, 1.0, 1.0, texture(u_tex0, u_txcd_mat * v_texcoor_st).r);\n";
 
 		GL::RenderDataBuffer::FormatShaderTC(vsBuf, vsBuf + sizeof(vsBuf), "", "", "", "VS");
 		GL::RenderDataBuffer::FormatShaderTC(fsBuf, fsBuf + sizeof(fsBuf), "", fsVars, fsCode, "FS");
@@ -778,7 +777,7 @@ void CglFont::RenderString(float x, float y, float scaleX, float scaleY, const s
 			*(curBufferPos[pbi]++) = {{dx0, dy1, textDepth.x},  tx0, ty1,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx0, dy0, textDepth.x},  tx0, ty0,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy0, textDepth.x},  tx1, ty0,  (&newColor.x)};
-			
+
 			*(curBufferPos[pbi]++) = {{dx0, dy1, textDepth.x},  tx0, ty1,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy0, textDepth.x},  tx1, ty0,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy1, textDepth.x},  tx1, ty1,  (&newColor.x)};
@@ -859,7 +858,7 @@ void CglFont::RenderStringShadow(float x, float y, float scaleX, float scaleY, c
 			*(curBufferPos[obi]++) = {{dx0 + shiftX - ssX, dy1 - shiftY - ssY, textDepth.y},  stx0, sty1,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx0 + shiftX - ssX, dy0 - shiftY + ssY, textDepth.y},  stx0, sty0,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx1 + shiftX + ssX, dy0 - shiftY + ssY, textDepth.y},  stx1, sty0,  (&outlineColor.x)};
-			
+
 			*(curBufferPos[obi]++) = {{dx0 + shiftX - ssX, dy1 - shiftY - ssY, textDepth.y},  stx0, sty1,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx1 + shiftX + ssX, dy0 - shiftY + ssY, textDepth.y},  stx1, sty0,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx1 + shiftX + ssX, dy1 - shiftY - ssY, textDepth.y},  stx1, sty1,  (&outlineColor.x)};
@@ -868,7 +867,7 @@ void CglFont::RenderStringShadow(float x, float y, float scaleX, float scaleY, c
 			*(curBufferPos[pbi]++) = {{dx0, dy1, textDepth.x},  tx0, ty1,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx0, dy0, textDepth.x},  tx0, ty0,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy0, textDepth.x},  tx1, ty0,  (&newColor.x)};
-			
+
 			*(curBufferPos[pbi]++) = {{dx0, dy1, textDepth.x},  tx0, ty1,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy0, textDepth.x},  tx1, ty0,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy1, textDepth.x},  tx1, ty1,  (&newColor.x)};
@@ -946,7 +945,7 @@ void CglFont::RenderStringOutlined(float x, float y, float scaleX, float scaleY,
 			*(curBufferPos[obi]++) = {{dx0 - shiftX, dy1 - shiftY, textDepth.y},  stx0, sty1,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx0 - shiftX, dy0 + shiftY, textDepth.y},  stx0, sty0,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx1 + shiftX, dy0 + shiftY, textDepth.y},  stx1, sty0,  (&outlineColor.x)};
-			
+
 			*(curBufferPos[obi]++) = {{dx0 - shiftX, dy1 - shiftY, textDepth.y},  stx0, sty1,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx1 + shiftX, dy0 + shiftY, textDepth.y},  stx1, sty0,  (&outlineColor.x)};
 			*(curBufferPos[obi]++) = {{dx1 + shiftX, dy1 - shiftY, textDepth.y},  stx1, sty1,  (&outlineColor.x)};
@@ -955,7 +954,7 @@ void CglFont::RenderStringOutlined(float x, float y, float scaleX, float scaleY,
 			*(curBufferPos[pbi]++) = {{dx0, dy1, textDepth.x},  tx0, ty1,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx0, dy0, textDepth.x},  tx0, ty0,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy0, textDepth.x},  tx1, ty0,  (&newColor.x)};
-			
+
 			*(curBufferPos[pbi]++) = {{dx0, dy1, textDepth.x},  tx0, ty1,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy0, textDepth.x},  tx1, ty0,  (&newColor.x)};
 			*(curBufferPos[pbi]++) = {{dx1, dy1, textDepth.x},  tx1, ty1,  (&newColor.x)};

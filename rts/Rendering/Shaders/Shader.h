@@ -29,6 +29,7 @@ namespace Shader {
 		uint32_t count;
 		uint32_t type;
 		uint32_t stride;
+		bool normalize;
 
 		const char* name;
 		const void* data;
