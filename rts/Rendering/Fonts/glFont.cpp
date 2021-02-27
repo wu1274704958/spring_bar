@@ -1040,52 +1040,52 @@ CMatrix44f CglFont::DefProjMatrix() { return CMatrix44f::ClipOrthoProj01(globalR
 
 
 
-void CglFont::glPrint(float x, float y, float s, const int options, const std::string& text)
+void CglFont::glPrint(float x, float y, float sx, float sy, const int options, const std::string& text)
 {
 	// s := scale or absolute size?
-	if (options & FONT_SCALE)
-		s *= fontSize;
+	if (options & FONT_SCALE) {
+		sx *= fontSize;
+		sy *= fontSize;
+	}
 
-	float sizeX = s;
-	float sizeY = s;
 	float textDescender = 0.0f;
 
 	// render in normalized coords (0..1) instead of screencoords (0..~1024)
 	if (options & FONT_NORM) {
-		sizeX *= globalRendering->pixelX;
-		sizeY *= globalRendering->pixelY;
+		sx *= globalRendering->pixelX;
+		sy *= globalRendering->pixelY;
 	}
 
 	// horizontal alignment (FONT_LEFT is default)
 	if (options & FONT_CENTER) {
-		x -= (sizeX * 0.5f * GetTextWidth(text));
+		x -= (sx * 0.5f * GetTextWidth(text));
 	} else if (options & FONT_RIGHT) {
-		x -= (sizeX * GetTextWidth(text));
+		x -= (sy * GetTextWidth(text));
 	}
 
 
 	// vertical alignment
-	y += (sizeY * GetDescender()); // move to baseline (note: descender is negative)
+	y += (sy * GetDescender()); // move to baseline (note: descender is negative)
 
 	if (options & FONT_BASELINE) {
 		// nothing
 	} else if (options & FONT_DESCENDER) {
-		y -= (sizeY * GetDescender());
+		y -= (sy * GetDescender());
 	} else if (options & FONT_VCENTER) {
-		y -= (sizeY * 0.5f * GetTextHeight(text, &textDescender));
-		y -= (sizeY * 0.5f * textDescender);
+		y -= (sy * 0.5f * GetTextHeight(text, &textDescender));
+		y -= (sy * 0.5f * textDescender);
 	} else if (options & FONT_TOP) {
-		y -= sizeY * GetTextHeight(text);
+		y -= sy * GetTextHeight(text);
 	} else if (options & FONT_ASCENDER) {
-		y -= (sizeY * (GetDescender() + 1.0f));
+		y -= (sy * (GetDescender() + 1.0f));
 	} else if (options & FONT_BOTTOM) {
 		GetTextHeight(text, &textDescender);
-		y -= (sizeY * textDescender);
+		y -= (sy * textDescender);
 	}
 
 	if (options & FONT_NEAREST) {
-		x = (int)x;
-		y = (int)y;
+		x = math::floor(x * globalRendering->screenSizeX) / globalRendering->screenSizeX;
+		y = math::floor(y * globalRendering->screenSizeY) / globalRendering->screenSizeY;
 	}
 
 	// backup text & outline colors, ::ColorResetIndicator will reset them
@@ -1113,11 +1113,11 @@ void CglFont::glPrint(float x, float y, float s, const int options, const std::s
 
 	// select correct decoration RenderString function
 	if ((options & FONT_OUTLINE) != 0) {
-		RenderStringOutlined(x, y, sizeX, sizeY, text, cccb);
+		RenderStringOutlined(x, y, sx, sy, text, cccb);
 	} else if ((options & FONT_SHADOW) != 0) {
-		RenderStringShadow(x, y, sizeX, sizeY, text, cccb);
+		RenderStringShadow(x, y, sx, sy, text, cccb);
 	} else {
-		RenderString(x, y, sizeX, sizeY, text, cccb);
+		RenderString(x, y, sx, sy, text, cccb);
 	}
 
 	if (immediate) {
