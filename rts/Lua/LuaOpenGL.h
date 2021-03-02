@@ -122,11 +122,11 @@ class LuaOpenGL {
 	protected:
 		static void ResetGLState();
 
-		static void ResetGenesisMatrices() {}
-		static void ResetWorldMatrices() {}
-		static void ResetWorldShadowMatrices() {}
-		static void ResetScreenMatrices() {}
-		static void ResetMiniMapMatrices() {}
+		static void ResetGenesisMatrices();
+		static void ResetWorldMatrices();
+		static void ResetWorldShadowMatrices();
+		static void ResetScreenMatrices();
+		static void ResetMiniMapMatrices();
 
 	private:
 		static bool inSafeMode;

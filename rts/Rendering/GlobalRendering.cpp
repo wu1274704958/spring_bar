@@ -6,9 +6,10 @@
 #include "GlobalRendering.h"
 #include "GlobalRenderingInfo.h"
 #include "Rendering/VerticalSync.h"
+#include "Rendering/UniformConstants.h"
 #include "Rendering/GL/myGL.h"
 #include "Rendering/GL/FBO.h"
-#include "Rendering/UniformConstants.h"
+#include "Rendering/GL/MatrixStateUploader.hpp"
 #include "Rendering/GL/RenderDataBuffer.hpp"
 #include "System/bitops.h"
 #include "System/EventHandler.h"
@@ -283,7 +284,9 @@ CGlobalRendering::~CGlobalRendering()
 
 void CGlobalRendering::PreKill()
 {
-	UniformConstants::GetInstance().Kill(); //unsafe to kill in ~CGlobalRendering()
+	//unsafe to kill in ~CGlobalRendering()
+	UniformConstants::GetInstance().Kill();
+	GL::MatrixStateUploader::GetInstance().Kill();
 }
 
 SDL_Window* CGlobalRendering::CreateSDLWindow(const int2& winRes, const int2& minRes, const char* title, bool hidden) const
@@ -1212,6 +1215,7 @@ void CGlobalRendering::InitGLState()
 	}
 
 	UniformConstants::GetInstance().Init();
+	GL::MatrixStateUploader::GetInstance().Init();
 
 	// this does not accomplish much
 	// SwapBuffers(true, true);

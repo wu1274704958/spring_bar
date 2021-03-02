@@ -50,7 +50,7 @@ namespace GL {
 	};
 
 
-	MatrixState* SetMatrixStatePointer(bool mainThread);
+	void SetMatrixStatePointer(bool mainThread);
 	MatrixState* GetMatrixStatePointer();
 
 

@@ -520,6 +520,50 @@ void LuaOpenGL::DisableCommon(DrawMode mode)
 
 }
 
+/******************************************************************************/
+/******************************************************************************/
+
+void LuaOpenGL::ResetGenesisMatrices()
+{
+	GL::MatrixMode(GL_TEXTURE); GL::LoadIdentity();
+	GL::MatrixMode(GL_PROJECTION); GL::LoadIdentity();
+	GL::MatrixMode(GL_MODELVIEW); GL::LoadIdentity();
+}
+
+
+void LuaOpenGL::ResetWorldMatrices()
+{
+	GL::MatrixMode(GL_TEXTURE); GL::LoadIdentity();
+	GL::MatrixMode(GL_PROJECTION); GL::LoadMatrix(camera->GetProjectionMatrix());
+	GL::MatrixMode(GL_MODELVIEW); GL::LoadMatrix(camera->GetViewMatrix());
+}
+
+void LuaOpenGL::ResetWorldShadowMatrices()
+{
+	GL::MatrixMode(GL_TEXTURE); GL::LoadIdentity();
+	GL::MatrixMode(GL_PROJECTION); GL::LoadMatrix(shadowHandler.GetShadowProjMatrix());
+	GL::MatrixMode(GL_MODELVIEW); GL::LoadMatrix(shadowHandler.GetShadowViewMatrix());
+}
+
+
+void LuaOpenGL::ResetScreenMatrices()
+{
+	GL::MatrixMode(GL_TEXTURE); GL::LoadIdentity();
+	GL::MatrixMode(GL_PROJECTION); GL::LoadMatrix(*globalRendering->screenProjMatrix);
+	GL::MatrixMode(GL_MODELVIEW); GL::LoadMatrix(*globalRendering->screenViewMatrix);
+}
+
+
+void LuaOpenGL::ResetMiniMapMatrices()
+{
+	assert(minimap != nullptr);
+
+	// engine draws minimap in 0..1 range, lua uses 0..minimapSize{X,Y}
+	GL::MatrixMode(GL_TEXTURE); GL::LoadIdentity();
+	GL::MatrixMode(GL_PROJECTION); GL::LoadMatrix(minimap->GetProjMat(2));
+	GL::MatrixMode(GL_MODELVIEW);  GL::LoadMatrix(minimap->GetViewMat(2));
+}
+
 
 /******************************************************************************/
 //

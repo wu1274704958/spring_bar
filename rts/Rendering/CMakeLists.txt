@@ -58,6 +58,7 @@ set(sources_engine_Rendering
 		"${CMAKE_CURRENT_SOURCE_DIR}/GL/LightHandler.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/GL/AttribState.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/GL/MatrixState.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/GL/MatrixStateUploader.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/GL/RenderDataBuffer.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/GL/VAO.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/GL/VBO.cpp"

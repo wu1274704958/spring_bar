@@ -2,6 +2,7 @@
 
 #include "MatrixState.hpp"
 #include "Rendering/GL/myGL.h"
+#include "Rendering/GL/MatrixStateUploader.hpp"
 #include "System/MainDefines.h"
 #include "System/MathConstants.h"
 #include "System/SpringMath.h"
@@ -9,9 +10,9 @@
 static              GL::MatrixState  glMatrixStates[2];
 static _threadlocal GL::MatrixState* glMatrixState = nullptr;
 
-GL::MatrixState* GL::SetMatrixStatePointer(bool mainThread) { return (glMatrixState = &glMatrixStates[mainThread]); }
-GL::MatrixState* GL::GetMatrixStatePointer(               ) { return (glMatrixState                              ); }
+void GL::SetMatrixStatePointer(bool mainThread) { glMatrixState = &glMatrixStates[mainThread]; }
 
+GL::MatrixState* GL::GetMatrixStatePointer() { return glMatrixState; }
 
 
 const CMatrix44f& GL::MatrixState::Top(unsigned int mode) const {
@@ -99,21 +100,22 @@ const CMatrix44f& GL::GetMatrix(unsigned int glMode) {
 	return (glMatrixState->Top());
 }
 
+#define UPLOAD_TOP_MATRIX (GL::MatrixStateUploader::GetInstance().Upload(glMatrixState->GetMode(), glMatrixState->Top()))
 
-void GL::PushMatrix(const CMatrix44f& m) { glMatrixState->Push(m); }
-void GL::PushMatrix() { glMatrixState->Push(glMatrixState->Top()); }
-void GL::PopMatrix() { glMatrixState->Pop(); }
+void GL::PushMatrix(const CMatrix44f& m) { glMatrixState->Push(m); UPLOAD_TOP_MATRIX; }
+void GL::PushMatrix() { glMatrixState->Push(glMatrixState->Top()); UPLOAD_TOP_MATRIX; }
+void GL::PopMatrix() { glMatrixState->Pop(); UPLOAD_TOP_MATRIX; }
 
-void GL::MultMatrix(const CMatrix44f& m) { glMatrixState->Mult(m); }
-void GL::LoadMatrix(const CMatrix44f& m) { glMatrixState->Load(m); }
-void GL::LoadIdentity() { LoadMatrix(CMatrix44f::Identity()); }
+void GL::MultMatrix(const CMatrix44f& m) { glMatrixState->Mult(m); UPLOAD_TOP_MATRIX; }
+void GL::LoadMatrix(const CMatrix44f& m) { glMatrixState->Load(m); UPLOAD_TOP_MATRIX; }
+void GL::LoadIdentity() { LoadMatrix(CMatrix44f::Identity()); UPLOAD_TOP_MATRIX; }
 
-void GL::Translate(const float3& v) { glMatrixState->Translate(v); }
+void GL::Translate(const float3& v) { glMatrixState->Translate(v); UPLOAD_TOP_MATRIX; }
 void GL::Translate(float x, float y, float z) { glMatrixState->Translate({x, y, z}); }
-void GL::Scale(const float3& s) { glMatrixState->Scale(s); }
+void GL::Scale(const float3& s) { glMatrixState->Scale(s); UPLOAD_TOP_MATRIX; }
 void GL::Scale(float x, float y, float z) { glMatrixState->Scale({x, y, z}); }
-void GL::Rotate(float a, float x, float y, float z) { glMatrixState->Rotate(a, x, y, z); }
-void GL::RotateX(float a) { glMatrixState->RotateX(a); }
-void GL::RotateY(float a) { glMatrixState->RotateY(a); }
-void GL::RotateZ(float a) { glMatrixState->RotateZ(a); }
+void GL::Rotate(float a, float x, float y, float z) { glMatrixState->Rotate(a, x, y, z); UPLOAD_TOP_MATRIX; }
+void GL::RotateX(float a) { glMatrixState->RotateX(a); UPLOAD_TOP_MATRIX; }
+void GL::RotateY(float a) { glMatrixState->RotateY(a); UPLOAD_TOP_MATRIX; }
+void GL::RotateZ(float a) { glMatrixState->RotateZ(a); UPLOAD_TOP_MATRIX; }
 
