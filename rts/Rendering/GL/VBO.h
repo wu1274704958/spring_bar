@@ -37,11 +37,13 @@ public:
 	 * @param target can be either GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_PIXEL_PACK_BUFFER, GL_PIXEL_UNPACK_BUFFER or GL_UNIFORM_BUFFER
 	 * @see http://www.opengl.org/sdk/docs/man/xhtml/glBindBuffer.xml
 	 */
-	void Bind() const { Bind(defTarget); }
+	void Bind() const { Bind(curBoundTarget); }
 	void Bind(GLenum target) const;
 	void Unbind() const;
 
+	bool BindBufferRange(GLuint index, GLuint offset, GLsizeiptr size) const { return BindBufferRangeImpl(curBoundTarget, index, vboId, offset, size); }
 	bool BindBufferRange(GLenum target, GLuint index, GLuint offset, GLsizeiptr size) const { return BindBufferRangeImpl(target, index, vboId, offset, size); };
+	bool UnbindBufferRange(GLuint index, GLuint offset, GLsizeiptr size) const { return BindBufferRangeImpl(curBoundTarget, index, 0u, offset, size); };
 	bool UnbindBufferRange(GLenum target, GLuint index, GLuint offset, GLsizeiptr size) const { return BindBufferRangeImpl(target, index, 0u, offset, size); };
 
 	/**
@@ -68,6 +70,8 @@ public:
 		UnmapBuffer();
 		Unbind();
 	}
+
+	void SetBufferSubData(GLintptr offset, GLsizeiptr size, void* data);
 
 
 	GLuint GetId() const {
@@ -138,7 +142,7 @@ private:
 	size_t memSize = 0; // actual length of <data>; only set when !isSupported
 
 	mutable GLenum curBoundTarget = 0;
-	GLenum defTarget = GL_ARRAY_BUFFER;
+	constexpr static GLenum defTarget = GL_ARRAY_BUFFER;
 	GLenum usage = GL_STREAM_DRAW;
 private:
 	bool isSupported = true; // if false, data is allocated in main memory
