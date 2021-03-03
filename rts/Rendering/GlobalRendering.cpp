@@ -776,11 +776,13 @@ void CGlobalRendering::SetGLSupportFlags()
 	supportSeamlessCubeMaps = GLEW_ARB_seamless_cube_map;
 	#endif
 	// CC did not exist as an extension before GL4.5, too recent to enforce
-	supportClipSpaceControl &= ((globalRenderingInfo.glContextVersion.x * 10 + globalRenderingInfo.glContextVersion.y) >= 45);
+
+	//stick to the theory that reported = exist
+	//supportClipSpaceControl &= ((globalRenderingInfo.glContextVersion.x * 10 + globalRenderingInfo.glContextVersion.y) >= 45);
 	supportClipSpaceControl &= (configHandler->GetInt("ForceDisableClipCtrl") == 0);
 
-	supportFragDepthLayout = ((globalRenderingInfo.glContextVersion.x * 10 + globalRenderingInfo.glContextVersion.y) >= 42);
-
+	//supportFragDepthLayout = ((globalRenderingInfo.glContextVersion.x * 10 + globalRenderingInfo.glContextVersion.y) >= 42);
+	supportFragDepthLayout = GLEW_ARB_conservative_depth; //stick to the theory that reported = exist
 
 	#if 0
 	{
@@ -886,6 +888,7 @@ void CGlobalRendering::LogVersionInfo(const char* sdlVersionStr, const char* glV
 void CGlobalRendering::LogGLSupportInfo() const
 {
 	LOG("[GR::%s]", __func__);
+	LOG("\tInitialized OpenGL Context: %i.%i (%s)", globalRenderingInfo.glContextVersion.x, globalRenderingInfo.glContextVersion.y, globalRenderingInfo.glContextIsCore ? "Core" : "Compat");
 	LOG("\tNVX GPU mem-info support  : %i", glewIsExtensionSupported("GL_NVX_gpu_memory_info"));
 	LOG("\tATI GPU mem-info support  : %i", glewIsExtensionSupported("GL_ATI_meminfo"));
 	LOG("\tNPOT-texture support      : %i (%i)", supportNonPowerOfTwoTex, glewIsExtensionSupported("GL_ARB_texture_non_power_of_two"));
@@ -894,7 +897,7 @@ void CGlobalRendering::LogGLSupportInfo() const
 	LOG("\tprimitive-restart support : %i (%i)", supportRestartPrimitive, glewIsExtensionSupported("GL_NV_primitive_restart"));
 	LOG("\tclip-space control support: %i (%i)", supportClipSpaceControl, glewIsExtensionSupported("GL_ARB_clip_control"));
 	LOG("\tseamless cube-map support : %i (%i)", supportSeamlessCubeMaps, glewIsExtensionSupported("GL_ARB_seamless_cube_map"));
-	LOG("\tfrag-depth layout support : %i (-)", supportFragDepthLayout);
+	LOG("\tfrag-depth layout support : %i (%i)", supportFragDepthLayout, glewIsExtensionSupported("GL_ARB_conservative_depth"));
 	LOG("\t");
 	LOG("\tmax. FBO samples             : %i", FBO::GetMaxSamples());
 	LOG("\tmax. texture size            : %i", maxTextureSize);
@@ -1265,6 +1268,14 @@ bool CGlobalRendering::CheckGLContextVersion(const int2& minCtx) const
 
 	glGetIntegerv(GL_MAJOR_VERSION, &tmpCtx.x);
 	glGetIntegerv(GL_MINOR_VERSION, &tmpCtx.y);
+
+	GLint profile = 0;
+	glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
+
+	if (profile != 0)
+		globalRenderingInfo.glContextIsCore = (profile == GL_CONTEXT_CORE_PROFILE_BIT);
+	else
+		globalRenderingInfo.glContextIsCore = !GLEW_ARB_compatibility;
 
 	// keep this for convenience
 	globalRenderingInfo.glContextVersion = tmpCtx;
