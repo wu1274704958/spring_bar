@@ -782,7 +782,9 @@ void CGlobalRendering::SetGLSupportFlags()
 	supportClipSpaceControl &= (configHandler->GetInt("ForceDisableClipCtrl") == 0);
 
 	//supportFragDepthLayout = ((globalRenderingInfo.glContextVersion.x * 10 + globalRenderingInfo.glContextVersion.y) >= 42);
+	#ifdef GLEW_ARB_conservative_depth
 	supportFragDepthLayout = GLEW_ARB_conservative_depth; //stick to the theory that reported = exist
+	#endif
 
 	#if 0
 	{
