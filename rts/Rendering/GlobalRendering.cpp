@@ -34,6 +34,7 @@ CONFIG(int, GLContextMajorVersion).defaultValue(4).minimumValue(3).maximumValue(
 CONFIG(int, GLContextMinorVersion).defaultValue(1).minimumValue(0).maximumValue(5);
 CONFIG(int, MSAALevel).defaultValue(0).minimumValue(0).maximumValue(32).description("Enables multisample anti-aliasing; 'level' is the number of samples used.");
 
+CONFIG(int, ForceDisablePersistentMapping).defaultValue(0).minimumValue(0).maximumValue(1);
 CONFIG(int, ForceDisableClipCtrl).defaultValue(0).minimumValue(0).maximumValue(1);
 
 // apply runtime texture compression for glBuildMipmaps?
@@ -744,6 +745,7 @@ void CGlobalRendering::SetGLSupportFlags()
 	}
 
 	supportPersistentMapping = GLEW_ARB_buffer_storage;
+	supportPersistentMapping &= (configHandler->GetInt("ForceDisablePersistentMapping") == 0);
 
 	// all modern ATI's support NPOTs
 	supportNonPowerOfTwoTex = GLEW_ARB_texture_non_power_of_two;
@@ -900,6 +902,7 @@ void CGlobalRendering::LogGLSupportInfo() const
 	LOG("\tclip-space control support: %i (%i)", supportClipSpaceControl, glewIsExtensionSupported("GL_ARB_clip_control"));
 	LOG("\tseamless cube-map support : %i (%i)", supportSeamlessCubeMaps, glewIsExtensionSupported("GL_ARB_seamless_cube_map"));
 	LOG("\tfrag-depth layout support : %i (%i)", supportFragDepthLayout, glewIsExtensionSupported("GL_ARB_conservative_depth"));
+	LOG("\tpersistent maps support   : %i (%i)", supportPersistentMapping, glewIsExtensionSupported("GL_ARB_buffer_storage"));
 	LOG("\t");
 	LOG("\tmax. FBO samples             : %i", FBO::GetMaxSamples());
 	LOG("\tmax. texture size            : %i", maxTextureSize);
