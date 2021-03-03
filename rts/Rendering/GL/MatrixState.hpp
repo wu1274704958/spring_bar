@@ -20,7 +20,7 @@ namespace GL {
 		std::vector<CMatrix44f>* stack = &stacks[0];
 
 		CMatrix44f dummy;
-
+		bool dirty;
 	public:
 		const CMatrix44f& Top(unsigned int mode) const;
 
@@ -47,6 +47,9 @@ namespace GL {
 		void RotateY(float a);
 		void RotateZ(float a);
 		void Rotate(float a, float x, float y, float z);
+
+		bool GetDirty() { return dirty; }
+		void SetDirty(bool d = true) { dirty = d; }
 	};
 
 

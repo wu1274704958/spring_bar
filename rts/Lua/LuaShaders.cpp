@@ -13,6 +13,7 @@
 #include "Game/Camera.h"
 #include "System/Log/ILog.h"
 #include "System/StringUtil.h"
+#include "Rendering/GL/MatrixStateUploader.hpp"
 
 #include <string>
 #include <vector>
@@ -649,6 +650,7 @@ int LuaShaders::UseShader(lua_State* L)
 	if (progName == 0) {
 		lua_pushboolean(L, false);
 	} else {
+		GL::MatrixStateUploader::GetInstance().Upload();
 		glUseProgram(progName);
 		lua_pushboolean(L, true);
 	}
@@ -674,6 +676,7 @@ int LuaShaders::ActiveShader(lua_State* L)
 	GLint currentProgram;
 	glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);
 
+	GL::MatrixStateUploader::GetInstance().Upload();
 	glUseProgram(progName);
 	activeShaderDepth++;
 	const int error = lua_pcall(L, lua_gettop(L) - 2, 0, 0);

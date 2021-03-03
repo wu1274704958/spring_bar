@@ -4,6 +4,8 @@
 #include "Rendering/Shaders/ShaderHandler.h"
 #include "Rendering/Shaders/LuaShaderContainer.h"
 #include "Rendering/Shaders/GLSLCopyState.h"
+
+#include "Rendering/GL/MatrixStateUploader.hpp"
 #include "Rendering/GL/myGL.h"
 
 #include "System/SafeUtil.h"
@@ -246,6 +248,7 @@ namespace Shader {
 	}
 
 	void GLSLProgramObject::EnableRaw() {
+		GL::MatrixStateUploader::GetInstance().Upload();
 		glUseProgram(glid);
 		IProgramObject::Enable();
 	}

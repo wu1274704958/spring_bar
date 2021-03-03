@@ -2,6 +2,8 @@
 
 #include "MatrixStateUploader.hpp"
 
+#include "Rendering/GL/MatrixState.hpp"
+
 #include "Rendering/GL/myGL.h"
 #include "System/SafeUtil.h"
 
@@ -47,18 +49,24 @@ void MatrixStateUploader::Kill()
 	KillVBO();
 }
 
-void MatrixStateUploader::Upload(const unsigned int updateElemOffset, const CMatrix44f& mat)
+void MatrixStateUploader::Upload()
 {
 	if (!Supported() || !initialized)
 		return;
 
-	matrixStateArray[updateElemOffset] = mat;
+	auto* stackPtr = GL::GetMatrixStatePointer();
+	if (!stackPtr->GetDirty())
+		return;
 
-	if (updateElemOffset < 2) {
-		matrixStateArray[3] = matrixStateArray[0] * matrixStateArray[1]; //MV * P
+	for (int i = 0; i < 3; ++i) {
+		matrixStateArray[i] = stackPtr->Top();
 	}
+
+	matrixStateArray[3] = matrixStateArray[0] * matrixStateArray[1]; //MV * P
 
 	ubo->Bind();
 	ubo->SetBufferSubData(0, sizeof(matrixStateArray), matrixStateArray.data()); //seems to be faster than mapping
 	ubo->Unbind();
+
+	stackPtr->SetDirty(false);
 }

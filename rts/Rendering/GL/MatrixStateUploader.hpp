@@ -23,7 +23,7 @@ namespace GL {
 	public:
 		void Init();
 		void Kill();
-		void Upload(const unsigned int updateElemOffset, const CMatrix44f& mat);
+		void Upload();
 	private:
 		void InitVBO();
 		void KillVBO();

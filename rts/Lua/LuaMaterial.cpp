@@ -11,6 +11,7 @@
 #include "Rendering/GlobalRendering.h" // drawFrame
 #include "Rendering/ShadowHandler.h"
 #include "Rendering/Env/ISky.h"
+#include "Rendering/GL/MatrixStateUploader.hpp"
 #include "Sim/Objects/SolidObject.h"
 #include "Sim/Misc/GlobalSynced.h" // simFrame
 #include "System/Log/ILog.h"
@@ -147,6 +148,7 @@ void LuaMatShader::Execute(const LuaMatShader& prev, bool deferredPass) const
 		switch (type) {
 			case LUASHADER_GL: {
 				// custom shader
+				GL::MatrixStateUploader::GetInstance().Upload();
 				glUseProgram(openglID);
 
 				assert(luaMatHandler.setupDrawStateFuncs[type] != nullptr);
@@ -169,6 +171,7 @@ void LuaMatShader::Execute(const LuaMatShader& prev, bool deferredPass) const
 	if (openglID == prev.openglID)
 		return;
 
+	GL::MatrixStateUploader::GetInstance().Upload();
 	glUseProgram(openglID);
 }
 
