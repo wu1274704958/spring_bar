@@ -124,7 +124,7 @@ void CAirLosTexture::UpdateCPU()
 	infoTexPBO.Bind();
 	uint8_t* infoTexMem = reinterpret_cast<uint8_t*>(infoTexPBO.MapBuffer());
 
-	if (!losHandler->globalLOS[gu->myAllyTeam]) {
+	if (!losHandler->GetGlobalLOS(gu->myAllyTeam)) {
 		const uint16_t* myAirLos = &losHandler->airLos.losMaps[gu->myAllyTeam].front();
 		for (int y = 0; y < texSize.y; ++y) {
 			for (int x = 0; x < texSize.x; ++x) {
@@ -149,7 +149,7 @@ void CAirLosTexture::Update()
 	if (!fbo.IsValid() || !shader->IsValid() || uploadTex == 0)
 		return UpdateCPU();
 
-	if (losHandler->globalLOS[gu->myAllyTeam]) {
+	if (losHandler->GetGlobalLOS(gu->myAllyTeam)) {
 		fbo.Bind();
 		glAttribStatePtr->ViewPort(0,0, texSize.x, texSize.y);
 		glAttribStatePtr->ClearColor(1.0f, 1.0f, 1.0f, 1.0f);

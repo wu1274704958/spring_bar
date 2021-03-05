@@ -144,7 +144,7 @@ void CRadarTexture::UpdateCPU()
 	infoTexPBO.Bind();
 	uint8_t* infoTexMem = reinterpret_cast<uint8_t*>(infoTexPBO.MapBuffer());
 
-	if (!losHandler->globalLOS[gu->myAllyTeam]) {
+	if (!losHandler->GetGlobalLOS(gu->myAllyTeam)) {
 		const int jammerAllyTeam = modInfo.separateJammers ? gu->myAllyTeam : 0;
 
 		const uint16_t* myLos = &losHandler->los.losMaps[gu->myAllyTeam].front();
@@ -181,7 +181,7 @@ void CRadarTexture::Update()
 	if (!fbo.IsValid() || !shader->IsValid() || uploadTexRadar == 0 || uploadTexJammer == 0)
 		return UpdateCPU();
 
-	if (losHandler->globalLOS[gu->myAllyTeam]) {
+	if (losHandler->GetGlobalLOS(gu->myAllyTeam)) {
 		fbo.Bind();
 		glAttribStatePtr->ViewPort(0,0, texSize.x, texSize.y);
 		glAttribStatePtr->ClearColor(1.0f, 0.0f, 0.0f, 0.0f);
