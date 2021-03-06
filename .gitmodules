@@ -7,13 +7,13 @@
 [submodule "tools/unitsync/python"]
 	path = tools/unitsync/python
 	url = git://github.com/spring/pyunitsync.git
+[submodule "tools/pr-downloader"]
+	path = tools/pr-downloader
+	url = https://github.com/beyond-all-reason/pr-downloader.git
 [submodule "tools/SpringMapConvNG"]
 	path = tools/mapcompile
 	url = https://github.com/spring/SpringMapConvNG.git
 [submodule "AI/Skirmish/BARb"]
 	path = AI/Skirmish/BARb
 	url = https://github.com/rlcevg/CircuitAI.git
-	branch = barb3
-[submodule "tools/pr-downloader"]
-	path = tools/pr-downloader
-	url = https://github.com/beyond-all-reason/pr-downloader
+	branch = barbarian
