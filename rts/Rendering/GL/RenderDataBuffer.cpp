@@ -3,10 +3,110 @@
 #include <cassert>
 #include <cstring> // memcpy
 
+#include "lib/fmt/printf.h"
+
 #include "myGL.h"
+#include "System/StringUtil.h"
 #include "RenderDataBuffer.hpp"
 #include "Rendering/Fonts/glFont.h"
 #include "Rendering/Shaders/ShaderHandler.h"
+
+#include "System/Log/ILog.h"
+
+
+constexpr const char* stdShaderTmplVert = R"(
+#version 410 core
+//TODO: switch spring to 420?
+
+#extension GL_ARB_explicit_attrib_location : require //core since 3.3
+#extension GL_ARB_uniform_buffer_object    : require //core since 3.1
+#extension GL_ARB_shading_language_420pack : require //core since 4.2
+
+//defines
+#define VA_TYPE {VA_TYPE}
+{DEFINES}
+
+//globals
+{GLOBALS}
+
+//UBOs
+layout(std140, binding = 2) uniform FixedStateMatrices {
+	mat4 modelViewMat;
+	mat4 projectionMat;
+	mat4 textureMat;
+	mat4 modelViewProjectionMat;
+};
+
+//uniforms
+uniform  int u_tran_sel = 0;
+uniform mat4 u_movi_mat = mat4(1.0);
+uniform mat4 u_proj_mat = mat4(1.0);
+
+// VS input attributes
+{INPUTS}
+
+// VS output attributes
+{OUTPUTS}
+
+void Transform_Uniform(vec4 vertex) {
+	gl_Position = u_proj_mat * u_movi_mat * vertex;
+}
+
+void Transform_UBO(vec4 vertex) {
+	gl_Position = modelViewProjectionMat * vertex;
+}
+
+void Transform(vec4 vertex) {
+	if (u_tran_sel == 0)
+		Transform_Uniform(vertex);
+	else
+		Transform_UBO(vertex);
+}
+
+///
+void main() {
+	Transform({A_VERTEX});
+{BODY}
+}
+)";
+
+constexpr const char* stdShaderTmplFrag = R"(
+#version 410 core
+//TODO: switch spring to 420?
+
+#extension GL_ARB_explicit_attrib_location : require //core since 3.3
+//#extension GL_ARB_uniform_buffer_object    : require //core since 3.1
+//#extension GL_ARB_shading_language_420pack : require //core since 4.2
+
+//defines
+#define VA_TYPE {VA_TYPE}
+{DEFINES}
+
+//globals
+{GLOBALS}
+
+//uniforms
+uniform sampler2D u_tex0;
+uniform vec4 u_alpha_test_ctrl = vec4(0.0, 0.0, 0.0, 1.0);
+uniform float u_gamma_exp = 1.0;
+
+
+// FS input attributes
+{INPUTS}
+
+// FS output attributes
+layout(location = 0) out vec4 f_color_rgba;
+
+void main() {
+{BODY}
+	float alpha_test_gt = float(f_color_rgba.a > u_alpha_test_ctrl.x) * u_alpha_test_ctrl.y;
+	float alpha_test_lt = float(f_color_rgba.a < u_alpha_test_ctrl.x) * u_alpha_test_ctrl.z;
+	if ((alpha_test_gt + alpha_test_lt + u_alpha_test_ctrl.w) == 0.0)
+		discard;
+
+	f_color_rgba.rgb = pow(f_color_rgba.rgb, vec3(u_gamma_exp));
+}
+)";
 
 
 // global general-purpose buffers
@@ -56,9 +156,6 @@ GL::RenderDataBufferL* GL::GetRenderBufferL() { return (tRenderBufferL[0].Wait()
 
 
 void GL::InitRenderBuffers() {
-	char vsBuffer[65536];
-	char fsBuffer[65536];
-
 	Shader::GLSLShaderObject shaderObjs[2] = {{GL_VERTEX_SHADER, "", ""}, {GL_FRAGMENT_SHADER, "", ""}};
 
 
@@ -66,10 +163,10 @@ void GL::InitRenderBuffers() {
 	#define SETUP_RBUFFER(T, i, ne, ni) tRenderBuffer ## T[i].Setup(&gRenderBuffer ## T[i], &GL::VA_TYPE_ ## T ## _ATTRS, ne, ni)
 	#define CREATE_SHADER(T, i, VS_CODE, FS_CODE)                                                                                            \
 		do {                                                                                                                                 \
-			GL::RenderDataBuffer::FormatShader ## T(vsBuffer, vsBuffer + sizeof(vsBuffer), "", "", VS_CODE, "VS");                           \
-			GL::RenderDataBuffer::FormatShader ## T(fsBuffer, fsBuffer + sizeof(fsBuffer), "", "", FS_CODE, "FS");                           \
-			shaderObjs[0] = {GL_VERTEX_SHADER  , &vsBuffer[0], ""};                                                                          \
-			shaderObjs[1] = {GL_FRAGMENT_SHADER, &fsBuffer[0], ""};                                                                          \
+			std::string vsSrc = GL::RenderDataBuffer::FormatShader ## T("", "", VS_CODE, "VS");                                              \
+			std::string fsSrc = GL::RenderDataBuffer::FormatShader ## T("", "", FS_CODE, "FS");                                              \
+			shaderObjs[0] = {GL_VERTEX_SHADER  , vsSrc.c_str(), ""};                                                                         \
+			shaderObjs[1] = {GL_FRAGMENT_SHADER, fsSrc.c_str(), ""};                                                                         \
 			gRenderBuffer ## T[i].CreateShader((sizeof(shaderObjs) / sizeof(shaderObjs[0])), 0,  &shaderObjs[0], nullptr, MAKE_NAME_STR(T)); \
 		} while (false)
 
@@ -206,158 +303,104 @@ void GL::RenderDataBuffer::DisableAttribs(size_t numAttrs, const Shader::ShaderI
 }
 
 
-char* GL::RenderDataBuffer::FormatShaderBase(
-	char* buf,
-	const char* end,
+std::string GL::RenderDataBuffer::FormatShaderBase(
 	const char* defines,
 	const char* globals,
 	const char* type,
 	const char* name
 ) {
-	std::memset(buf, 0, (end - buf));
 
-	char* ptr = &buf[0];
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "#version 410 core\n");
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "#extension GL_ARB_explicit_attrib_location : enable\n");
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "// defines\n");
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "#define VA_TYPE %s\n", name);
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", defines);
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\n");
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "// globals\n");
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", globals);
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "// uniforms\n");
+	std::string shaderSrc;
 
-	switch (type[0]) {
-		case 'V': {
-			ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "uniform mat4 u_movi_mat;\n");
-			ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "uniform mat4 u_proj_mat;\n");
-		} break;
-		case 'F': {
-			ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "uniform sampler2D u_tex0;\n"); // T*,2DT*,L (v_texcoor_st*)
-			ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "uniform vec4 u_alpha_test_ctrl = vec4(0.0, 0.0, 0.0, 1.0);\n");
-			ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "uniform vec3 u_gamma_exponents = vec3(1.0, 1.0, 1.0);\n"); // TODO: set for every shader
-		} break;
-		default: {
-		} break;
+	if (type[0] == 'V') {
+		//shaderSrc = Shader::GetShaderSource("GLSL/StdShaderTmplVert.glsl");
+		shaderSrc = stdShaderTmplVert;
+	}
+	else if (type[0] == 'F') {
+		//shaderSrc = Shader::GetShaderSource("GLSL/StdShaderTmplFrag.glsl");
+		shaderSrc = stdShaderTmplFrag;
 	}
 
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\n");
-	return ptr;
+	if (shaderSrc.empty())
+		return "";
+
+	shaderSrc = StringReplace(shaderSrc, "{VA_TYPE}", type);
+	shaderSrc = StringReplace(shaderSrc, "{DEFINES}", defines);
+	shaderSrc = StringReplace(shaderSrc, "{GLOBALS}", globals);
+
+	return shaderSrc;
 }
 
-char* GL::RenderDataBuffer::FormatShaderType(
-	char* buf,
-	char* ptr,
-	const char* end,
+std::string GL::RenderDataBuffer::FormatShaderType(
+	std::string& shaderSrc,
 	size_t numAttrs,
 	const Shader::ShaderInput* rawAttrs,
 	const char* code,
 	const char* type,
 	const char* name
 ) {
+
 	constexpr const char*  vecTypes[] = {"vec2", "vec3", "vec4"};
 	constexpr const char* typeQuals[] = {"", "flat"};
 
 	constexpr const char* vsInpFmt = "layout(location = %d) in %s %s;\n";
-	constexpr const char* vsOutFmt = "%s out %s v_%s;\n"; // prefix VS outs by "v_"
-	constexpr const char* fsInpFmt = "%s in %s v_%s;\n";
-	constexpr const char* fsOutFmt = "layout(location = 0) out vec4 f_%s;\n"; // prefix (single, fixed) FS out by "f_"
+	constexpr const char* varyiFmt = "%s %s %s v_%s;\n";
+	constexpr const char* vsBdyFmt = "\tv_%s = %s;\n";
 
-	{
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "// %s input attributes\n", type);
-
-		for (size_t n = 0; n < numAttrs; n++) {
-			const Shader::ShaderInput& a = rawAttrs[n];
-
-			assert(a.count >= 2);
-			assert(a.count <= 4);
-
-			const char*  vecType = vecTypes[a.count - 2];
-			const char* typeQual = typeQuals[strstr(a.name + 2, typeQuals[1]) != nullptr];
-
-			switch (type[0]) {
-				case 'V': { ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), vsInpFmt, a.index, vecType, a.name); } break;
-				case 'F': { ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), fsInpFmt, typeQual, vecType, a.name + 2); } break;
-				default: {} break;
-			}
-		}
-	}
-
-	{
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "// %s output attributes\n", type);
-
-		switch (type[0]) {
-			case 'V': {
-				for (size_t n = 0; n < numAttrs; n++) {
-					const Shader::ShaderInput& a = rawAttrs[n];
-
-					assert(a.name[0] == 'a');
-					assert(a.name[1] == '_');
-
-					const char*  vecType = vecTypes[a.count - 2];
-					const char* typeQual = typeQuals[strstr(a.name + 2, typeQuals[1]) != nullptr];
-
-					ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), vsOutFmt, typeQual, vecType, a.name + 2);
-				}
-			} break;
-			case 'F': {
-				ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), fsOutFmt, "color_rgba");
-			} break;
+	if (type[0] == 'V') {
+		// position (2D, 3D, or 4D [Lua]) is always the first attribute
+		switch (rawAttrs[0].count) {
+			case 2: { shaderSrc = StringReplace(shaderSrc, "{A_VERTEX}", "vec4(a_vertex_xy  , 0.0, 1.0)"); } break;
+			case 3: { shaderSrc = StringReplace(shaderSrc, "{A_VERTEX}", "vec4(a_vertex_xyz ,      1.0)"); } break;
+			case 4: { shaderSrc = StringReplace(shaderSrc, "{A_VERTEX}", "vec4(a_vertex_xyzw          )"); } break;
 			default: {} break;
 		}
 	}
 
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\n");
-	ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "void main() {\n");
+	std::stringstream inpuBody;
+	std::stringstream outpBody;
+	std::stringstream shdrBody;
 
-	if (code[0] != '\0') {
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s\n", code);
-	} else {
+	for (size_t n = 0; n < numAttrs; n++) {
+		const Shader::ShaderInput& a = rawAttrs[n];
+
+		assert(a.count >= 2);
+		assert(a.count <= 4);
+
+		const char*  vecType = vecTypes[a.count - 2];
+		const char* typeQual = typeQuals[strstr(a.name + 2, typeQuals[1]) != nullptr];
+
 		switch (type[0]) {
-			case 'V': {
-				// position (2D, 3D, or 4D [Lua]) is always the first attribute
-				switch (rawAttrs[0].count) {
-					case 2: { ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tgl_Position = u_proj_mat * u_movi_mat * vec4(a_vertex_xy  , 0.0, 1.0);\n"); } break;
-					case 3: { ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tgl_Position = u_proj_mat * u_movi_mat * vec4(a_vertex_xyz ,      1.0);\n"); } break;
-					case 4: { ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tgl_Position = u_proj_mat * u_movi_mat * vec4(a_vertex_xyzw          );\n"); } break;
-					default: {} break;
-				}
-
-				for (size_t n = 1; n < numAttrs; n++) {
-					const Shader::ShaderInput& a = rawAttrs[n];
-
-					// assume standard tc-gen
-					if (std::strcmp(a.name, "a_texcoor_stuv") == 0) {
-						ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tv_texcoor_stuv = a_texcoor_stuv;\n");
-						continue;
-					}
-					if (std::strcmp(a.name, "a_texcoor_st") == 0) {
-						ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tv_texcoor_st = a_texcoor_st;\n");
-						continue;
-					}
-					if (std::strcmp(a.name, "a_texcoor_uv") == 0) {
-						ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "\tv_texcoor_uv%d = a_texcoor_uv%d;\n", a.name[12] - '0', a.name[12] - '0');
-						continue;
-					}
-
-					ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "\tv_%s = a_%s;\n", a.name + 2, a.name + 2);
-				}
-			} break;
-			case 'F': {} break;
-			default: {} break;
+		case 'V': {
+			inpuBody << fmt::sprintf(vsInpFmt, a.index, vecType, a.name);
+			outpBody << fmt::sprintf(varyiFmt, typeQual, "out", vecType, a.name + 2);
+			shdrBody << fmt::sprintf(vsBdyFmt, a.name + 2, a.name);
+		} break;
+		case 'F': {
+			inpuBody << fmt::sprintf(varyiFmt, typeQual, "in" , vecType, a.name + 2);
+			//outAttrs << fsOut; //stays empty
+		} break;
+		default: {} break;
 		}
 	}
 
-	// assume shaders want this even if they specify main()
-	if (type[0] == 'F') {
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tfloat alpha_test_gt = float(f_color_rgba.a > u_alpha_test_ctrl.x) * u_alpha_test_ctrl.y;\n");
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tfloat alpha_test_lt = float(f_color_rgba.a < u_alpha_test_ctrl.x) * u_alpha_test_ctrl.z;\n");
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tif ((alpha_test_gt + alpha_test_lt + u_alpha_test_ctrl.w) == 0.0)\n");
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\t\tdiscard;\n");
-		ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "\tf_color_rgba.rgb = pow(f_color_rgba.rgb, u_gamma_exponents);\n");
+	if (code[0] != '\0') { //supplied specific code
+		shdrBody << code;
 	}
 
-	return (ptr += std::snprintf(ptr, (end - buf) - (ptr - buf), "%s", "}\n"));
+	const auto replaceFunc = [&shaderSrc](const char* what, const std::string& with) {
+		if (!with.empty())
+			shaderSrc = StringReplace(shaderSrc, what, with);
+	};
+
+	replaceFunc("{INPUTS}" , inpuBody.str());
+	replaceFunc("{OUTPUTS}", outpBody.str());
+	replaceFunc("{BODY}"   , shdrBody.str());
+
+	//LOG("inpuBody:\n%s", inpuBody.str().c_str());
+	//LOG("Shader src:\n%s", shaderSrc.c_str());
+
+	return shaderSrc;
 }
 
 

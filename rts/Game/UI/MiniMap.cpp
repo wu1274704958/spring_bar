@@ -207,7 +207,7 @@ void CMiniMap::LoadBuffer()
 	shaderProg->SetUniform("u_infomap_tex", 2);
 	shaderProg->SetUniform("u_texcoor_mul", isx, isy);
 	shaderProg->SetUniform("u_infotex_mul", 0.0f);
-	shaderProg->SetUniform("u_gamma_expon", 1.0f);
+	shaderProg->SetUniform("u_gamma_exp", 1.0f);
 	shaderProg->Disable();
 }
 
@@ -1572,7 +1572,7 @@ void CMiniMap::DrawBackground()
 		readMap->BindMiniMapTextures();
 		shader->Enable();
 		shader->SetUniform("u_infotex_mul", infoTextureHandler->IsEnabled() * 1.0f);
-		shader->SetUniform("u_gamma_expon", globalRendering->gammaExponent);
+		shader->SetUniform("u_gamma_exp", globalRendering->gammaExponent);
 		buffer->Submit(GL_TRIANGLES, 0, buffer->GetNumElems<MiniMapVertType>());
 		shader->Disable();
 	}

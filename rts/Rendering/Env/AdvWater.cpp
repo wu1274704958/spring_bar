@@ -124,7 +124,7 @@ CAdvWater::CAdvWater(bool refractive)
 		waterShader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
 		waterShader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
 		waterShader->SetUniform("u_forward_vec", 0.0f, 0.0f);
-		waterShader->SetUniform("u_gamma_expon", 1.0f, 1.0f, 1.0f);
+		waterShader->SetUniform("u_gamma_exp", 1.0f, 1.0f, 1.0f);
 		waterShader->SetUniform("u_texrect_size", 0.0f, 0.0f); // refractive
 		waterShader->SetUniform("u_shading_sgen", 1.0f / (mapDims.pwr2mapx * SQUARE_SIZE), 0.0f, 0.0f, 0.0f); // refractive
 		waterShader->SetUniform("u_shading_tgen", 0.0f, 0.0f, 1.0f / (mapDims.pwr2mapy * SQUARE_SIZE), 0.0f); // refractive
@@ -234,7 +234,7 @@ void CAdvWater::Draw(bool useBlending)
 	ipo->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
 	ipo->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	ipo->SetUniform("u_forward_vec", forward.x, forward.z);
-	ipo->SetUniform("u_gamma_expon", gammaExpon.x, gammaExpon.y, gammaExpon.z);
+	ipo->SetUniform("u_gamma_exp", gammaExpon.x, gammaExpon.y, gammaExpon.z);
 	ipo->SetUniform("u_texrect_size", globalRendering->viewSizeX * 10.0f, globalRendering->viewSizeY * 10.0f); // range [0, width], not [0,1]
 
 	// generate a grid, bottom to top

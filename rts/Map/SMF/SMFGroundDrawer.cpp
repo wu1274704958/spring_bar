@@ -225,31 +225,28 @@ void CSMFGroundDrawer::CreateWaterPlanes(bool camOutsideMap) {
 		waterPlaneBuffers[camOutsideMap].UploadC(verts.size(), 0, verts.data(), nullptr);
 	}
 	{
-		char vsBuf[65536];
-		char fsBuf[65536];
-
 		const char* vsVars = "uniform float u_plane_offset;\n";
 		const char* vsCode =
 			"\tgl_Position = u_proj_mat * u_movi_mat * vec4(a_vertex_xyz + vec3(0.0, u_plane_offset, 0.0), 1.0);\n"
 			"\tv_color_rgba = a_color_rgba;\n";
 		const char* fsVars =
-			"uniform float u_gamma_exponent;\n";
+			"uniform float u_gamma_exp;\n";
 		const char* fsCode =
 			"\tf_color_rgba = v_color_rgba;\n"
-			"\tf_color_rgba.rgb = pow(f_color_rgba.rgb, vec3(u_gamma_exponent));\n";
+			"\tf_color_rgba.rgb = pow(f_color_rgba.rgb, vec3(u_gamma_exp));\n";
 
-		GL::RenderDataBuffer::FormatShaderC(vsBuf, vsBuf + sizeof(vsBuf), "", vsVars, vsCode, "VS");
-		GL::RenderDataBuffer::FormatShaderC(fsBuf, fsBuf + sizeof(fsBuf), "", fsVars, fsCode, "FS");
+		std::string vsSrc = GL::RenderDataBuffer::FormatShaderC("", vsVars, vsCode, "VS");
+		std::string fsSrc = GL::RenderDataBuffer::FormatShaderC("", fsVars, fsCode, "FS");
 		GL::RenderDataBuffer& renderDataBuffer = waterPlaneBuffers[camOutsideMap];
 
-		Shader::GLSLShaderObject shaderObjs[2] = {{GL_VERTEX_SHADER, &vsBuf[0], ""}, {GL_FRAGMENT_SHADER, &fsBuf[0], ""}};
+		Shader::GLSLShaderObject shaderObjs[2] = {{GL_VERTEX_SHADER, vsSrc.c_str(), ""}, {GL_FRAGMENT_SHADER, fsSrc.c_str(), ""}};
 		Shader::IProgramObject* shaderProg = renderDataBuffer.CreateShader((sizeof(shaderObjs) / sizeof(shaderObjs[0])), 0, &shaderObjs[0], nullptr);
 
 		shaderProg->Enable();
 		shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
 		shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
 		shaderProg->SetUniform("u_plane_offset", 0.0f);
-		shaderProg->SetUniform("u_gamma_exponent", globalRendering->gammaExponent);
+		shaderProg->SetUniform("u_gamma_exp", globalRendering->gammaExponent);
 		shaderProg->Disable();
 	}
 }
@@ -275,7 +272,7 @@ void CSMFGroundDrawer::CreateBorderShader() {
 	shaderProg->SetUniform("u_diffuse_tex_sqr", -1, -1, -1);
 	shaderProg->SetUniform("u_diffuse_tex", 0);
 	shaderProg->SetUniform("u_detail_tex", 2);
-	shaderProg->SetUniform("u_gamma_exponent", globalRendering->gammaExponent);
+	shaderProg->SetUniform("u_gamma_exp", globalRendering->gammaExponent);
 	shaderProg->Disable();
 }
 
@@ -291,7 +288,7 @@ void CSMFGroundDrawer::DrawWaterPlane(bool drawWaterReflection) {
 	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
 	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	shader->SetUniform("u_plane_offset", std::min(-200.0f, smfMap->GetCurrMinHeight() - 400.0f));
-	shader->SetUniform("u_gamma_exponent", globalRendering->gammaExponent);
+	shader->SetUniform("u_gamma_exp", globalRendering->gammaExponent);
 	buffer.Submit(GL_TRIANGLE_STRIP, 0, buffer.GetNumElems<VA_TYPE_C>());
 	shader->Disable();
 }
@@ -477,7 +474,7 @@ void CSMFGroundDrawer::DrawBorder(const DrawPass::e drawPass)
 	shaderProg->Enable();
 	shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
 	shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
-	shaderProg->SetUniform<float>("u_gamma_exponent", globalRendering->gammaExponent);
+	shaderProg->SetUniform<float>("u_gamma_exp", globalRendering->gammaExponent);
 	// shaderProg->SetUniform("u_alpha_test_ctrl", 0.9f, 1.0f, 0.0f, 0.0f); // test > 0.9 if (mapRendering->voidWater && (drawPass != DrawPass::WaterReflection))
 
 	groundTextures->BindSquareTextureArray();

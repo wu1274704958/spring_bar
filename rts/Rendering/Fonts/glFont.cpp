@@ -162,18 +162,15 @@ CglFont::CglFont(const std::string& fontFile, int size, int _outlineWidth, float
 		#endif
 	}
 	{
-		char vsBuf[65536];
-		char fsBuf[65536];
-
 		// color attribs are not normalized
 		const char* fsVars =
 			"uniform mat2 u_txcd_mat;\n";
 		const char* fsCode = "\tf_color_rgba = (v_color_rgba) * vec4(1.0, 1.0, 1.0, texture(u_tex0, u_txcd_mat * v_texcoor_st).r);\n";
 
-		GL::RenderDataBuffer::FormatShaderTC(vsBuf, vsBuf + sizeof(vsBuf), "", "", "", "VS");
-		GL::RenderDataBuffer::FormatShaderTC(fsBuf, fsBuf + sizeof(fsBuf), "", fsVars, fsCode, "FS");
+		std::string vsSrc = GL::RenderDataBuffer::FormatShaderTC("", "", "", "VS");
+		std::string fsSrc = GL::RenderDataBuffer::FormatShaderTC("", fsVars, fsCode, "FS");
 
-		Shader::GLSLShaderObject shaderObjs[2] = {{GL_VERTEX_SHADER, &vsBuf[0], ""}, {GL_FRAGMENT_SHADER, &fsBuf[0], ""}};
+		Shader::GLSLShaderObject shaderObjs[2] = {{GL_VERTEX_SHADER, vsSrc.c_str(), ""}, {GL_FRAGMENT_SHADER, fsSrc.c_str(), ""}};
 		Shader::IProgramObject* shaderProg = primaryBuffer[0].CreateShader((sizeof(shaderObjs) / sizeof(shaderObjs[0])), 0, &shaderObjs[0], nullptr);
 
 		shaderProg->Enable();

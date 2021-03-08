@@ -36,6 +36,8 @@ set(FILES
 	shaders/GLSL/SMFFragProg4.glsl
 	shaders/GLSL/SMFBorderVertProg4.glsl
 	shaders/GLSL/SMFBorderFragProg4.glsl
+	shaders/GLSL/StdShaderTmplVert.glsl
+	shaders/GLSL/StdShaderTmplFrag.glsl
 	shaders/GLSL/GroundDecalsFragProg.glsl
 	shaders/GLSL/GroundDecalsVertProg.glsl
 	shaders/GLSL/DecalsVertGL4.glsl

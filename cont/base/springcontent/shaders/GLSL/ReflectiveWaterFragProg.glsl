@@ -4,7 +4,7 @@ uniform sampler2D reflmap_tex; // TU0
 uniform sampler2D bumpmap_tex; // TU1
 
 uniform vec2 u_forward_vec; // x,z,0,0
-uniform vec3 u_gamma_expon;
+uniform vec3 u_gamma_exp = 1.0;
 
 in vec4 v_color_rgba;
 in vec2 v_reflmap_tc;
@@ -30,6 +30,6 @@ void main() {
 	reflmap_texel = texture(reflmap_tex, reflmap_tc);
 	f_frag_color = reflmap_texel * (v_color_rgba + vec4(0.0, 0.0, 0.0, bumpmap_dp.y * 0.03));
 
-	f_frag_color.rgb = pow(f_frag_color.rgb, u_gamma_expon);
+	f_frag_color.rgb = pow(f_frag_color.rgb, u_gamma_exp);
 }
 

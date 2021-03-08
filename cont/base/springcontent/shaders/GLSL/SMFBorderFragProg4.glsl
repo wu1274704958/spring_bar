@@ -4,7 +4,7 @@ uniform sampler2DArray u_diffuse_tex;
 uniform sampler2D      u_detail_tex;
 
 uniform ivec3 u_diffuse_tex_sqr;
-uniform float u_gamma_exponent;
+uniform float u_gamma_exp = 1.0;
 
 in vec3 v_vertex_xyz;
 in vec4 v_color_rgba;
@@ -21,6 +21,6 @@ void main() {
 	vec4 detail_color = texture(u_detail_tex, v_detail_tc) * 2.0 - 1.0;
 
 	f_color_rgba = (diffuse_color + detail_color) * (v_color_rgba * (1.0 / 255.0));
-	f_color_rgba.rgb = pow(f_color_rgba.rgb, vec3(u_gamma_exponent));
+	f_color_rgba.rgb = pow(f_color_rgba.rgb, vec3(u_gamma_exp));
 }
 

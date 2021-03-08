@@ -568,18 +568,15 @@ void CBumpWater::GenWaterPlaneBuffer(bool radial)
 	waterPlaneBuffer.Upload0(verts.size(), 0, verts.data(), nullptr);
 
 	{
-		char vsBuf[65536];
-		char fsBuf[65536];
-
 		const char* vsVars = "";
 		const char* vsCode = "\tgl_Position = u_proj_mat * u_movi_mat * vec4(a_vertex_xyz, 1.0);\n";
 		const char* fsVars = "";
 		const char* fsCode = "\tf_color_rgba = vec4(1.0, 1.0, 1.0, 1.0);\n";
 
-		GL::RenderDataBuffer::FormatShader0(vsBuf, vsBuf + sizeof(vsBuf), "", vsVars, vsCode, "VS");
-		GL::RenderDataBuffer::FormatShader0(fsBuf, fsBuf + sizeof(fsBuf), "", fsVars, fsCode, "FS");
+		std::string vsSrc = GL::RenderDataBuffer::FormatShader0("", vsVars, vsCode, "VS");
+		std::string fsSrc = GL::RenderDataBuffer::FormatShader0("", fsVars, fsCode, "FS");
 
-		Shader::GLSLShaderObject shaderObjs[2] = {{GL_VERTEX_SHADER, &vsBuf[0], ""}, {GL_FRAGMENT_SHADER, &fsBuf[0], ""}};
+		Shader::GLSLShaderObject shaderObjs[2] = {{GL_VERTEX_SHADER, vsSrc.c_str(), ""}, {GL_FRAGMENT_SHADER, fsSrc.c_str(), ""}};
 		Shader::IProgramObject* shaderProg = waterPlaneBuffer.CreateShader((sizeof(shaderObjs) / sizeof(shaderObjs[0])), 0, &shaderObjs[0], nullptr);
 
 		shaderProg->Enable();

@@ -6,7 +6,7 @@ uniform sampler2DRect subsurf_tex; // TU2
 uniform sampler2D     shading_tex; // TU3
 
 uniform vec2 u_forward_vec; // x,z,0,0
-uniform vec3 u_gamma_expon;
+uniform vec3 u_gamma_exp = 1.0;
 uniform vec2 u_texrect_size;
 
 in vec4 v_color_rgba;
@@ -44,6 +44,6 @@ void main() {
 	f_frag_color = reflmap_texel * v_color_rgba;
 	f_frag_color = mix(f_frag_color, subsurf_texel, blend_factors);
 
-	f_frag_color.rgb = pow(f_frag_color.rgb, u_gamma_expon);
+	f_frag_color.rgb = pow(f_frag_color.rgb, u_gamma_exp);
 }
 

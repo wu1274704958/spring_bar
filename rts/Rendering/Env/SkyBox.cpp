@@ -81,7 +81,7 @@ void CSkyBox::LoadBuffer()
 
 	shaderProg->Enable();
 	shaderProg->SetUniform("u_skycube_tex", 0);
-	shaderProg->SetUniform("u_gamma_exponent", globalRendering->gammaExponent);
+	shaderProg->SetUniform("u_gamma_exp", globalRendering->gammaExponent);
 	shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
 	shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
 	shaderProg->Disable();
@@ -124,7 +124,7 @@ void CSkyBox::Draw(Game::DrawMode mode)
 	}
 	{
 		shader->Enable();
-		shader->SetUniform("u_gamma_exponent", globalRendering->gammaExponent);
+		shader->SetUniform("u_gamma_exp", globalRendering->gammaExponent);
 		buffer->Submit(GL_TRIANGLES, (((vtxPos - 6) - vtxPtr) + SKYBOX_VERTEX_CNT) % SKYBOX_BUFFER_LEN, 6);
 		shader->Disable();
 	}

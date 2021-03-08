@@ -7,7 +7,7 @@ uniform sampler2D u_infomap_tex;
 uniform vec2 u_texcoor_mul;
 
 uniform float u_infotex_mul;
-uniform float u_gamma_expon;
+uniform float u_gamma_exp = 1.0;
 
 in vec2 v_tex_coords;
 
@@ -20,6 +20,6 @@ void main()
 	vec4 infomap_texel = texture(u_infomap_tex, v_tex_coords * u_texcoor_mul) - vec4(0.5);
 
 	f_frag_color = shading_texel * minimap_texel + (infomap_texel * u_infotex_mul);
-	f_frag_color.rgb = pow(f_frag_color.rgb, vec3(u_gamma_expon));
+	f_frag_color.rgb = pow(f_frag_color.rgb, vec3(u_gamma_exp));
 }
 
