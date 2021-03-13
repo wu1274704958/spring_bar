@@ -142,6 +142,19 @@ namespace GL {
 
 	struct RenderDataBuffer {
 	public:
+		enum class ShaderTransformType {
+			SHDR_TRANSFORM_UBO          = -1,
+			SHDR_TRANSFORM_UNIFORM      = 0,
+			SHDR_TRANSFORM_CAM_PLAYER   = 1,
+			SHDR_TRANSFORM_CAM_PLAYERBB = 2,
+			SHDR_TRANSFORM_CAM_SHADOW   = 3,
+			SHDR_TRANSFORM_SCREEN       = 4,
+			SHDR_TRANSFORM_ORTHO01      = 5,
+			SHDR_TRANSFORM_MMWORLD      = 6,
+			SHDR_TRANSFORM_MMHM         = 7,
+			SHDR_TRANSFORM_MMDIM        = 8,
+		};
+	public:
 		RenderDataBuffer() = default;
 		RenderDataBuffer(const RenderDataBuffer& rdb) = delete;
 		RenderDataBuffer(RenderDataBuffer&& rdb) { *this = std::move(rdb); }
@@ -274,6 +287,8 @@ namespace GL {
 			const char* progName = ""
 		);
 
+		void SetShaderTransformType(Shader::IProgramObject* shader, const ShaderTransformType shtt = ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
+
 		void Submit(uint32_t primType, uint32_t dataIndx, uint32_t dataSize) const;
 		void SubmitInstanced(uint32_t primType, uint32_t dataIndx, uint32_t dataSize, uint32_t numInsts) const;
 		void SubmitIndexed(uint32_t primType, uint32_t dataIndx, uint32_t dataSize) const;
@@ -330,7 +345,6 @@ namespace GL {
 		bool IsInited() const { return inited; }
 		bool IsMapped() const { return (mapped[0] || mapped[1]); }
 		bool IsPinned() const { return elems.immutableStorage; }
-
 	private:
 		template<typename T> static T* MapBuffer(VBO& vbo, bool bind, bool unbind, bool read, bool write) {
 			if (bind)

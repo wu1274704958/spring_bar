@@ -24,12 +24,57 @@ constexpr const char* stdShaderTmplVert = R"(
 
 //defines
 #define VA_TYPE {VA_TYPE}
+
+#define SHDR_TRANSFORM_UBO          -1
+#define SHDR_TRANSFORM_UNIFORM       0
+#define SHDR_TRANSFORM_CAM_PLAYER    1
+#define SHDR_TRANSFORM_CAM_PLAYERBB  2
+#define SHDR_TRANSFORM_CAM_SHADOW    3
+#define SHDR_TRANSFORM_SCREEN        4
+#define SHDR_TRANSFORM_ORTHO01       5
+#define SHDR_TRANSFORM_MMWORLD       6
+#define SHDR_TRANSFORM_MMHM          7
+#define SHDR_TRANSFORM_MMDIM         8
+
 {DEFINES}
 
 //globals
 {GLOBALS}
 
 //UBOs
+layout(std140, binding = 0) uniform UniformMatrixBuffer {
+	mat4 screenView;
+	mat4 screenProj;
+	mat4 screenViewProj;
+
+	mat4 cameraView;
+	mat4 cameraProj;
+	mat4 cameraViewProj;
+	mat4 cameraBillboardProj;
+
+	mat4 cameraViewInv;
+	mat4 cameraProjInv;
+	mat4 cameraViewProjInv;
+
+	mat4 shadowView;
+	mat4 shadowProj;
+	mat4 shadowViewProj;
+
+	mat4 orthoProj01;
+
+	mat4 mmDrawView; //world to MM
+	mat4 mmDrawIMMView; //heightmap to MM
+	mat4 mmDrawDimView; //mm dims
+
+	mat4 mmDrawProj; //world to MM
+	mat4 mmDrawIMMProj; //heightmap to MM
+	mat4 mmDrawDimProj; //mm dims
+
+	mat4 mmDrawViewProj; //world to MM
+	mat4 mmDrawIMMViewProj; //heightmap to MM
+	mat4 mmDrawDimViewProj; //mm dims
+};
+
 layout(std140, binding = 2) uniform FixedStateMatrices {
 	mat4 modelViewMat;
 	mat4 projectionMat;
@@ -48,19 +93,81 @@ uniform mat4 u_proj_mat = mat4(1.0);
 // VS output attributes
 {OUTPUTS}
 
-void Transform_Uniform(vec4 vertex) {
-	gl_Position = u_proj_mat * u_movi_mat * vertex;
-}
-
 void Transform_UBO(vec4 vertex) {
 	gl_Position = modelViewProjectionMat * vertex;
 }
 
+void Transform_Uniform(vec4 vertex) {
+	gl_Position = u_proj_mat * u_movi_mat * vertex;
+}
+
+void Transform_CamPlayer(vec4 vertex) {
+	gl_Position = cameraViewProj * vertex;
+}
+
+void Transform_CamPlayerBB(vec4 vertex) {
+	gl_Position = cameraBillboardProj * vertex;
+}
+
+void Transform_CamShadow(vec4 vertex) {
+	gl_Position = shadowViewProj * vertex;
+}
+
+void Transform_Screen(vec4 vertex) {
+	gl_Position = screenViewProj * vertex;
+}
+
+void Transform_Orth01(vec4 vertex) {
+	gl_Position = orthoProj01 * vertex;
+}
+
+void Transform_MMWorld(vec4 vertex) {
+	gl_Position = mmDrawViewProj * vertex;
+}
+
+void Transform_MMHM(vec4 vertex) {
+	gl_Position = mmDrawIMMViewProj * vertex;
+}
+
+void Transform_MMDim(vec4 vertex) {
+	gl_Position = mmDrawDimViewProj * vertex;
+}
+
 void Transform(vec4 vertex) {
-	if (u_tran_sel == 0)
-		Transform_Uniform(vertex);
-	else
+	switch (u_tran_sel) {
+	case SHDR_TRANSFORM_UBO:
 		Transform_UBO(vertex);
+		break;
+	case SHDR_TRANSFORM_UNIFORM:
+		Transform_Uniform(vertex);
+		break;
+	case SHDR_TRANSFORM_CAM_PLAYER:
+		Transform_CamPlayer(vertex);
+		break;
+	case SHDR_TRANSFORM_CAM_PLAYERBB:
+		Transform_CamPlayerBB(vertex);
+		break;
+	case SHDR_TRANSFORM_CAM_SHADOW:
+		Transform_CamShadow(vertex);
+		break;
+	case SHDR_TRANSFORM_SCREEN:
+		Transform_Screen(vertex);
+		break;
+	case SHDR_TRANSFORM_ORTHO01:
+		Transform_Orth01(vertex);
+		break;
+	case SHDR_TRANSFORM_MMWORLD:
+		Transform_MMWorld(vertex);
+		break;
+	case SHDR_TRANSFORM_MMHM:
+		Transform_MMHM(vertex);
+		break;
+	case SHDR_TRANSFORM_MMDIM:
+		Transform_MMDim(vertex);
+		break;
+	default:
+		return;
+	};
 }
 
 ///
@@ -433,6 +540,21 @@ Shader::GLSLProgramObject* GL::RenderDataBuffer::CreateShader(
 	return &shader;
 }
 
+void GL::RenderDataBuffer::SetShaderTransformType(Shader::IProgramObject* shader, const ShaderTransformType shtt)
+{
+	assert(shader);
+	assert(shader->GetUniformLoc("u_tran_sel") >= 0);
+
+	bool wasBound = shader->IsBound();
+
+	if (!wasBound)
+		shader->Enable();
+
+	shader->SetUniform("u_tran_sel", static_cast<int>(shtt));
+
+	if (!wasBound)
+		shader->Disable();
+}
 
 void GL::RenderDataBuffer::Upload(
 	size_t numElems,
