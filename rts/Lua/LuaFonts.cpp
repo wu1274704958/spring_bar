@@ -50,9 +50,6 @@ bool LuaFonts::CreateMetatable(lua_State* L)
 		REGISTER_LUA_CFUNC(GetTextWidth);
 		REGISTER_LUA_CFUNC(GetTextHeight);
 
-		REGISTER_LUA_CFUNC(SetTextViewMatrix);
-		REGISTER_LUA_CFUNC(SetTextProjMatrix);
-
 		REGISTER_LUA_CFUNC(SetTextColor);
 		REGISTER_LUA_CFUNC(SetOutlineColor);
 
@@ -188,6 +185,8 @@ int LuaFonts::LoadFont(lua_State* L)
 	CglFont** font = reinterpret_cast<CglFont**>(lua_newuserdata(L, sizeof(CglFont*)));
 	*font = f;
 
+	(*font)->SetInLuaMode(true);
+
 	luaL_getmetatable(L, "Font");
 	lua_setmetatable(L, -2);
 	return 1;
@@ -214,7 +213,7 @@ int LuaFonts::Print(lua_State* L)
 	const float ypos = luaL_checkfloat(L, 4);
 	const float size = luaL_optfloat(L, 5, f->GetSize());
 
-	unsigned int options = 0;
+	unsigned int options = FONT_NEAREST;
 
 	if ((lua_gettop(L) >= 6) && lua_isstring(L, 6)) {
 		const char* c = lua_tostring(L, 6);
@@ -235,7 +234,7 @@ int LuaFonts::Print(lua_State* L)
 				case 'o':
 				case 'O': { options |= FONT_OUTLINE;   } break;
 
-				case 'n': { options |= FONT_NEAREST;   } break;
+				case 'n': { options ^= FONT_NEAREST;   } break;
 				case 'B': { options |= FONT_BUFFERED;  } break; // for DrawBuffered
 
 				case 'N': { options |= FONT_NORM;      } break;
@@ -397,35 +396,6 @@ int LuaFonts::SetAutoOutlineColor(lua_State* L)
 {
 	CglFont* f = tofont(L, 1);
 	f->SetAutoOutlineColor(luaL_checkboolean(L, 2));
-	return 0;
-}
-
-
-/******************************************************************************/
-/******************************************************************************/
-
-int LuaFonts::SetTextViewMatrix(lua_State* L)
-{
-	CglFont* f = tofont(L, 1);
-	CMatrix44f mat;
-
-	if (LuaUtils::ParseFloatArray(L, 2, &mat.m[0], 16) == 16)
-		f->SetViewMatrix(mat);
-	else
-		f->SetViewMatrix(CglFont::DefViewMatrix());
-
-	return 0;
-}
-int LuaFonts::SetTextProjMatrix(lua_State* L)
-{
-	CglFont* f = tofont(L, 1);
-	CMatrix44f mat;
-
-	if (LuaUtils::ParseFloatArray(L, 2, &mat.m[0], 16) == 16)
-		f->SetProjMatrix(mat);
-	else
-		f->SetProjMatrix(CglFont::DefProjMatrix());
-
 	return 0;
 }
 

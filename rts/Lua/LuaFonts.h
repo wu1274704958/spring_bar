@@ -43,9 +43,6 @@ class LuaFonts {
 		static int SetOutlineColor(lua_State* L);
 		static int SetAutoOutlineColor(lua_State* L);
 
-		static int SetTextViewMatrix(lua_State* L);
-		static int SetTextProjMatrix(lua_State* L);
-
 		static int BindTexture(lua_State* L);
 };
 

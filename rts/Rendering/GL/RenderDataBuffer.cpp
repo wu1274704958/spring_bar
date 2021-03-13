@@ -83,7 +83,7 @@ layout(std140, binding = 2) uniform FixedStateMatrices {
 };
 
 //uniforms
-uniform  int u_tran_sel = 0;
+uniform  int u_tran_sel = SHDR_TRANSFORM_UNIFORM;
 uniform mat4 u_movi_mat = mat4(1.0);
 uniform mat4 u_proj_mat = mat4(1.0);
 
@@ -540,7 +540,7 @@ Shader::GLSLProgramObject* GL::RenderDataBuffer::CreateShader(
 	return &shader;
 }
 
-void GL::RenderDataBuffer::SetShaderTransformType(Shader::IProgramObject* shader, const ShaderTransformType shtt)
+void GL::RenderDataBuffer::SetMatrixStackMode(Shader::IProgramObject* shader, const ShaderTransformType shtt)
 {
 	assert(shader);
 	assert(shader->GetUniformLoc("u_tran_sel") >= 0);

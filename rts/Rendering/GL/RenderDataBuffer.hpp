@@ -287,7 +287,7 @@ namespace GL {
 			const char* progName = ""
 		);
 
-		void SetShaderTransformType(Shader::IProgramObject* shader, const ShaderTransformType shtt = ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
+		static void SetMatrixStackMode(Shader::IProgramObject* shader, const ShaderTransformType shtt = ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 
 		void Submit(uint32_t primType, uint32_t dataIndx, uint32_t dataSize) const;
 		void SubmitInstanced(uint32_t primType, uint32_t dataIndx, uint32_t dataSize, uint32_t numInsts) const;

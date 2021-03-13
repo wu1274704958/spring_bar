@@ -177,6 +177,7 @@ CglFont::CglFont(const std::string& fontFile, int size, int _outlineWidth, float
 		shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMatrix = DefViewMatrix());
 		shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, projMatrix = DefProjMatrix());
 		shaderProg->SetUniformMatrix2x2<float>("u_txcd_mat", false, GetTexScaleMatrix(1.0f, 1.0f));
+		GL::RenderDataBuffer::SetMatrixStackMode(shaderProg, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		shaderProg->SetUniform("u_tex0", 0);
 		shaderProg->Disable();
 
@@ -611,6 +612,7 @@ void CglFont::End(Shader::IProgramObject* shader) {
 
 		if (curShader == defShader) {
 			curShader->SetUniformMatrix2x2<float>("u_txcd_mat", false, GetTexScaleMatrix(texWidth, texHeight));
+			GL::RenderDataBuffer::SetMatrixStackMode(curShader, inLua ? GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_SCREEN : GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		} else {
 			curShader->SetUniformMatrix2x2<float>("texCoorMat", false, GetTexScaleMatrix(texWidth, texHeight));
 		}
@@ -674,6 +676,7 @@ void CglFont::DrawBuffered(Shader::IProgramObject* shader)
 
 		if (curShader == defShader) {
 			curShader->SetUniformMatrix2x2<float>("u_txcd_mat", false, GetTexScaleMatrix(texWidth, texHeight));
+			GL::RenderDataBuffer::SetMatrixStackMode(curShader, inLua ? GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_SCREEN : GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		} else {
 			curShader->SetUniformMatrix2x2<float>("texCoorMat", false, GetTexScaleMatrix(texWidth, texHeight));
 		}
@@ -993,6 +996,7 @@ void CglFont::glWorldPrint(const float3& p, const float size, const std::string&
 		// TODO: simplify
 		curShader->SetUniformMatrix4x4<float>("u_movi_mat", false, vm * CMatrix44f(p, RgtVector, UpVector, FwdVector) * bm);
 		curShader->SetUniformMatrix2x2<float>("u_txcd_mat", false, GetTexScaleMatrix(texWidth, texHeight));
+		GL::RenderDataBuffer::SetMatrixStackMode(curShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 	} else {
 		curShader->SetUniformMatrix2x2<float>("texCoorMat", false, GetTexScaleMatrix(texWidth, texHeight));
 	}

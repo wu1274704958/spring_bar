@@ -77,6 +77,7 @@ public:
 		ResetBuffer( true);
 	}
 
+	void SetInLuaMode(const bool ilm = false) { inLua = ilm; }
 
 	void glWorldBegin() { glWorldBegin(defShader); }
 	void glWorldEnd() { glWorldEnd(defShader); }
@@ -151,6 +152,7 @@ private:
 	std::string fontPath;
 	spring::recursive_mutex bufferMutex;
 
+	bool inLua = false;
 
 	// used by {Begin,End}; each double-buffered
 	GL::RenderDataBuffer primaryBuffer[2];
