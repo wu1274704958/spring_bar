@@ -9,6 +9,7 @@
 #include "Game/Camera.h"
 #include "Game/CameraHandler.h"
 #include "Game/GlobalUnsynced.h"
+#include "Game/UI/MiniMap.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Misc/GlobalSynced.h"
 #include "Sim/Misc/TeamHandler.h"
@@ -86,7 +87,15 @@ void UniformConstants::UpdateMatricesImpl(UniformMatricesBuffer* updateBuffer)
 	updateBuffer->shadowProj = shadowHandler.GetShadowProjMatrix(CShadowHandler::SHADOWMAT_TYPE_DRAWING);
 	updateBuffer->shadowViewProj = updateBuffer->shadowProj * updateBuffer->shadowView;
 
-	updateBuffer->orthoProj01 = CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f);
+	updateBuffer->orthoProj01 = CMatrix44f::ClipOrthoProj01();
+
+	updateBuffer->mmDrawView = minimap->GetViewMat(0);
+	updateBuffer->mmDrawIMMView = minimap->GetViewMat(1);
+	updateBuffer->mmDrawDimView = minimap->GetViewMat(2);
+
+	updateBuffer->mmDrawProj = minimap->GetProjMat(0);
+	updateBuffer->mmDrawIMMProj = minimap->GetProjMat(1);
+	updateBuffer->mmDrawDimProj = minimap->GetProjMat(2);
 }
 
 
