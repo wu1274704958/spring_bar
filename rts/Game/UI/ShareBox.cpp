@@ -179,13 +179,13 @@ void CShareBox::Draw()
 	{
 		shader->Enable();
 		shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+		shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 		buffer->Submit(GL_TRIANGLES);
 
 		// show "share units" tickmark
 		if (shareUnits) {
 			GL::WideLineAdapterC* wla = GL::GetWideLineAdapterC();
-			wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, 3.0f, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+			wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, 3.0f, CMatrix44f::ClipOrthoProj01());
 			wla->SafeAppend({{box.x1 + unitBox.x1 + 0.01f, box.y1 + unitBox.y1 + 0.025f, 0.0f}, {0.9f, 0.2f, 0.2f, 0.7f}});
 			wla->SafeAppend({{box.x1 + unitBox.x1 + 0.02f, box.y1 + unitBox.y1 + 0.010f, 0.0f}, {0.9f, 0.2f, 0.2f, 0.7f}});
 			wla->SafeAppend({{box.x1 + unitBox.x1 + 0.03f, box.y1 + unitBox.y1 + 0.040f, 0.0f}, {0.9f, 0.2f, 0.2f, 0.7f}});

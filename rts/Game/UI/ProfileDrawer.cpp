@@ -398,7 +398,7 @@ static void DrawProfiler(GL::RenderDataBufferC* buffer)
 
 	// draw the graph lines
 	GL::WideLineAdapterC* wla = GL::GetWideLineAdapterC();
-	wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, 3.0f, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+	wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, 3.0f, CMatrix44f::ClipOrthoProj01());
 
 	for (const auto& p: sortedProfiles) {
 		const CTimeProfiler::TimeRecord& tr = p.second;
@@ -530,7 +530,7 @@ void ProfileDrawer::DrawScreen()
 
 	shader->Enable();
 	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 
 	font->SetTextColor(1.0f, 1.0f, 0.5f, 0.8f);
 

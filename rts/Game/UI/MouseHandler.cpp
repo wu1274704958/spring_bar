@@ -891,7 +891,7 @@ void CMouseHandler::DrawCursor()
 
 			shader->Enable();
 			shader->SetUniformMatrix4x4<float>("u_movi_mat", false, cursorMat);
-			shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+			shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 
 			if (gu->fpsMode) {
 				DrawFPSCursor(buffer);

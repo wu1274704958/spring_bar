@@ -242,7 +242,7 @@ void DebugDrawerAI::Graph::Clear() {
 void DebugDrawerAI::Graph::Draw(GL::RenderDataBufferC* buffer, Shader::IProgramObject* shader) {
 	shader->Enable();
 	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 
 	unsigned char color[4];
 
@@ -291,7 +291,7 @@ void DebugDrawerAI::Graph::Draw(GL::RenderDataBufferC* buffer, Shader::IProgramO
 	{
 		if (!lines.empty()) {
 			GL::WideLineAdapterC* wla = GL::GetWideLineAdapterC();
-			wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, 1.0f, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+			wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, 1.0f, CMatrix44f::ClipOrthoProj01());
 
 			int lineNum = 0;
 			float linePad = (1.0f / lines.size()) * 0.5f;
@@ -404,7 +404,7 @@ void DebugDrawerAI::TexSet::Draw(GL::RenderDataBufferT* buffer, Shader::IProgram
 
 	shader->Enable();
 	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 
 	font->SetTextColor(0.0f, 0.0f, 0.0f, 1.0f);
 

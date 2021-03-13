@@ -2873,7 +2873,7 @@ void CGuiHandler::DrawMenu()
 
 	shaderC->Enable();
 	shaderC->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shaderC->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+	shaderC->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 	shaderC->SetUniform("u_alpha_test_ctrl", 0.0099f, 1.0f, 0.0f, 0.0f); // test > 0.0099
 
 
@@ -2956,7 +2956,7 @@ void CGuiHandler::DrawMenu()
 		shaderC->Disable();
 		shaderTC->Enable();
 		shaderTC->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shaderTC->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f));
+		shaderTC->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 		shaderTC->SetUniform("u_alpha_test_ctrl", 0.0099f, 1.0f, 0.0f, 0.0f); // test > 0.0099
 
 		// icon textures (TODO: atlas these)

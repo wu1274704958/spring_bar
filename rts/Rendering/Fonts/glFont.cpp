@@ -1033,7 +1033,7 @@ void CglFont::glWorldEnd(Shader::IProgramObject* shader)
 
 
 CMatrix44f CglFont::DefViewMatrix() { return CMatrix44f::Identity(); }
-CMatrix44f CglFont::DefProjMatrix() { return CMatrix44f::ClipOrthoProj01(globalRendering->supportClipSpaceControl * 1.0f); }
+CMatrix44f CglFont::DefProjMatrix() { return CMatrix44f::ClipOrthoProj01(); }
 
 
 
