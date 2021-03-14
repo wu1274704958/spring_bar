@@ -82,6 +82,7 @@ void CLineDrawer::DrawAll(bool onMiniMap)
 	};
 
 	shader->Enable();
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, projMat);
 	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMat);
 

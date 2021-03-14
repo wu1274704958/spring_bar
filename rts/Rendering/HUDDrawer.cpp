@@ -83,6 +83,7 @@ void HUDDrawer::DrawUnitDirectionArrow(const CUnit* unit)
 	Shader::IProgramObject* prog = rdbc->GetShader();
 
 	prog->Enable();
+	GL::RenderDataBuffer::SetMatrixStackMode(prog, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 	prog->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMat);
 	prog->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
 
@@ -112,6 +113,7 @@ void HUDDrawer::DrawCameraDirectionArrow(const CUnit* unit)
 	Shader::IProgramObject* prog = rdbc->GetShader();
 
 	// prog->Enable();
+	GL::RenderDataBuffer::SetMatrixStackMode(prog, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 	prog->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMat);
 	rdbc->SafeAppend({{-0.2f, -0.3f, 0.0f}, arrowColor});
 	rdbc->SafeAppend({{-0.2f,  0.3f, 0.0f}, arrowColor});
@@ -198,8 +200,9 @@ void HUDDrawer::DrawTargetReticle(const CUnit* unit)
 	Shader::IProgramObject* prog = rdbc->GetShader();
 
 	prog->Enable();
-	prog->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-	prog->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+	GL::RenderDataBuffer::SetMatrixStackMode(prog, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+	//prog->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+	//prog->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 
 
 

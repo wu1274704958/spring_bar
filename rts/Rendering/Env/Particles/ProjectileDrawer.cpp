@@ -548,8 +548,9 @@ void CProjectileDrawer::DrawProjectilesMiniMap()
 	}
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, minimap->GetViewMat(0));
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, minimap->GetProjMat(0));
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_MMWORLD);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, minimap->GetViewMat(0));
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, minimap->GetProjMat(0));
 	buffer->Submit(GL_LINES);
 	shader->Disable();
 }
@@ -635,8 +636,9 @@ void CProjectileDrawer::DrawParticlePass(Shader::IProgramObject* po, bool, bool)
 
 
 		po->Enable();
-		po->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-		po->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+		GL::RenderDataBuffer::SetMatrixStackMode(po, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+		//po->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+		//po->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 		po->SetUniform("u_alpha_test_ctrl", 0.0f, 1.0f, 0.0f, 0.0f); // test > 0.0
 		textureAtlas->BindTexture();
 		fxBuffer->Submit(GL_TRIANGLES);
@@ -791,8 +793,9 @@ void CProjectileDrawer::DrawGroundFlashes()
 	gfShader = gfBuffer->GetShader();
 
 	gfShader->Enable();
-	gfShader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-	gfShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+	GL::RenderDataBuffer::SetMatrixStackMode(gfShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+	//gfShader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+	//gfShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	gfShader->SetUniform("u_alpha_test_ctrl", 0.01f, 1.0f, 0.0f, 0.0f); // test > 0.01
 
 	bool depthTest = true;
@@ -864,8 +867,9 @@ void CProjectileDrawer::UpdatePerlin() {
 	Shader::IProgramObject* shader = buffer->GetShader();
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 	shader->SetUniform("u_alpha_test_ctrl", 0.0f, 0.0f, 0.0f, 1.0f); // no test
 
 	for (int a = 0; a < 4; ++a) {

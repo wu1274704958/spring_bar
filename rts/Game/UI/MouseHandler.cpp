@@ -552,8 +552,9 @@ void CMouseHandler::DrawSelectionBox()
 	glAttribStatePtr->BlendFunc((GLenum) cmdColors.MouseBoxBlendSrc(), (GLenum) cmdColors.MouseBoxBlendDst());
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, cmdColors.MouseBoxLineWidth(), camera->GetViewProjectionMatrix());
 	wla->SafeAppend(&boxVerts[0], sizeof(boxVerts) / sizeof(boxVerts[0]));
 	wla->Submit(GL_LINE_LOOP);
@@ -890,6 +891,7 @@ void CMouseHandler::DrawCursor()
 			Shader::IProgramObject* shader = buffer->GetShader();
 
 			shader->Enable();
+			GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 			shader->SetUniformMatrix4x4<float>("u_movi_mat", false, cursorMat);
 			shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 

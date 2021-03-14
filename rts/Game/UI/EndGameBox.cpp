@@ -248,8 +248,9 @@ void CEndGameBox::Draw()
 	{
 		// draw boxes
 		shaderC->Enable();
-		shaderC->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shaderC->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+		GL::RenderDataBuffer::SetMatrixStackMode(shaderC, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+		//shaderC->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+		//shaderC->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 		bufferC->Submit(GL_TRIANGLES);
 		shaderC->Disable();
 	}
@@ -355,8 +356,9 @@ void CEndGameBox::Draw()
 
 		glBindTexture(GL_TEXTURE_2D, graphTex);
 		shaderT->Enable();
-		shaderT->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shaderT->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+		GL::RenderDataBuffer::SetMatrixStackMode(shaderT, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+		//shaderT->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+		//shaderT->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 		bufferT->Submit(GL_TRIANGLES);
 		shaderT->Disable();
 		glBindTexture(GL_TEXTURE_2D, 0);

@@ -282,8 +282,9 @@ void CFarTextureHandler::Draw()
 		Shader::IProgramObject* shader = buffer->GetShader();
 
 		shader->Enable();
-		shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-		shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+		GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+		//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+		//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 		shader->SetUniform("u_alpha_test_ctrl", 0.5f, 1.0f, 0.0f, 0.0f); // test > 0.5
 
 		for (const CSolidObject* obj: renderQueue) {

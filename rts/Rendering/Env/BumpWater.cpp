@@ -580,8 +580,9 @@ void CBumpWater::GenWaterPlaneBuffer(bool radial)
 		Shader::IProgramObject* shaderProg = waterPlaneBuffer.CreateShader((sizeof(shaderObjs) / sizeof(shaderObjs[0])), 0, &shaderObjs[0], nullptr);
 
 		shaderProg->Enable();
-		shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
+		GL::RenderDataBuffer::SetMatrixStackMode(shaderProg, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_IDENTITY);
+		//shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+		//shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
 		shaderProg->Disable();
 	}
 }
@@ -998,8 +999,9 @@ void CBumpWater::UpdateDynWaves(const bool initialize)
 	Shader::IProgramObject* shader = buffer->GetShader();
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 
 	glAttribStatePtr->ViewPort(0, 0, normalTextureX, normalTextureY);
 
@@ -1230,6 +1232,7 @@ void CBumpWater::OcclusionQuery()
 	Shader::IProgramObject* waterPlaneShader = &waterPlaneBuffer.GetShader();
 
 	waterPlaneShader->Enable();
+	GL::RenderDataBuffer::SetMatrixStackMode(waterPlaneShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 	waterPlaneShader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix() * CMatrix44f(float3{0.0f, 10.0f, 0.0f}));
 	waterPlaneShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 

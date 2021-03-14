@@ -218,8 +218,9 @@ void CInMapDrawView::Draw()
 	{
 		// draw lines
 		linesShader->Enable();
-		linesShader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-		linesShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+		GL::RenderDataBuffer::SetMatrixStackMode(linesShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+		//linesShader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+		//linesShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 		wla->Submit(GL_LINES);
 		linesShader->Disable();
 	}
@@ -227,8 +228,9 @@ void CInMapDrawView::Draw()
 		// draw points
 		glBindTexture(GL_TEXTURE_2D, texture);
 		pointShader->Enable();
-		pointShader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-		pointShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+		GL::RenderDataBuffer::SetMatrixStackMode(pointShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+		//pointShader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+		//pointShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 		pointBuffer->Submit(GL_TRIANGLES);
 		pointShader->Disable();
 		glBindTexture(GL_TEXTURE_2D, 0);

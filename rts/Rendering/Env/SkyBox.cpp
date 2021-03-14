@@ -82,6 +82,7 @@ void CSkyBox::LoadBuffer()
 	shaderProg->Enable();
 	shaderProg->SetUniform("u_skycube_tex", 0);
 	shaderProg->SetUniform("u_gamma_exp", globalRendering->gammaExponent);
+	// custom shader, no need to set matrix stack mode
 	shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
 	shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 	shaderProg->Disable();

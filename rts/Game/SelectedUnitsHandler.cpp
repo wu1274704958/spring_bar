@@ -587,8 +587,9 @@ void CSelectedUnitsHandler::Draw()
 	GL::WideLineAdapterC* wla = GL::GetWideLineAdapterC();
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	wla->Setup(buffer, globalRendering->viewSizeX, globalRendering->viewSizeY, cmdColors.UnitBoxLineWidth(), camera->GetViewProjectionMatrix());
 
 	if (udColor.a > 0) {

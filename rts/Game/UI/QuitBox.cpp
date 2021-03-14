@@ -153,8 +153,9 @@ void CQuitBox::Draw()
 
 	{
 		shader->Enable();
-		shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+		GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+		//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+		//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 		buffer->Submit(GL_TRIANGLES);
 		shader->Disable();
 	}

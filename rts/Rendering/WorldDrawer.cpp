@@ -401,8 +401,9 @@ void CWorldDrawer::DrawBelowWaterOverlay() const
 
 		{
 			shader->Enable();
-			shader->SetUniformMatrix4x4<const char*, float>("u_movi_mat", false, camera->GetViewMatrix());
-			shader->SetUniformMatrix4x4<const char*, float>("u_proj_mat", false, camera->GetProjectionMatrix());
+			GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+			//shader->SetUniformMatrix4x4<const char*, float>("u_movi_mat", false, camera->GetViewMatrix());
+			//shader->SetUniformMatrix4x4<const char*, float>("u_proj_mat", false, camera->GetProjectionMatrix());
 
 			buffer->SafeAppend({{cpos.x - cpos.w, 0.0f, cpos.z - cpos.w}, {0.0f, 0.5f, 0.3f, 0.50f}});
 			buffer->SafeAppend({{cpos.x - cpos.w, 0.0f, cpos.z + cpos.w}, {0.0f, 0.5f, 0.3f, 0.50f}});
@@ -439,8 +440,9 @@ void CWorldDrawer::DrawBelowWaterOverlay() const
 		glAttribStatePtr->BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// draw water-coloration quad in raw screenspace
-		shader->SetUniformMatrix4x4<const char*, float>("u_movi_mat", false, CMatrix44f::Identity());
-		shader->SetUniformMatrix4x4<const char*, float>("u_proj_mat", false, CMatrix44f::Identity());
+		GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_IDENTITY);
+		//shader->SetUniformMatrix4x4<const char*, float>("u_movi_mat", false, CMatrix44f::Identity());
+		//shader->SetUniformMatrix4x4<const char*, float>("u_proj_mat", false, CMatrix44f::Identity());
 
 		buffer->SafeAppend({{0.0f, 0.0f, -1.0f}, {0.0f, 0.2f, 0.8f, 0.333f}});
 		buffer->SafeAppend({{1.0f, 0.0f, -1.0f}, {0.0f, 0.2f, 0.8f, 0.333f}});

@@ -174,10 +174,10 @@ CglFont::CglFont(const std::string& fontFile, int size, int _outlineWidth, float
 		Shader::IProgramObject* shaderProg = primaryBuffer[0].CreateShader((sizeof(shaderObjs) / sizeof(shaderObjs[0])), 0, &shaderObjs[0], nullptr);
 
 		shaderProg->Enable();
+		GL::RenderDataBuffer::SetMatrixStackMode(shaderProg, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		shaderProg->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMatrix = DefViewMatrix());
 		shaderProg->SetUniformMatrix4x4<float>("u_proj_mat", false, projMatrix = DefProjMatrix());
 		shaderProg->SetUniformMatrix2x2<float>("u_txcd_mat", false, GetTexScaleMatrix(1.0f, 1.0f));
-		GL::RenderDataBuffer::SetMatrixStackMode(shaderProg, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		shaderProg->SetUniform("u_tex0", 0);
 		shaderProg->Disable();
 
@@ -633,6 +633,7 @@ void CglFont::End(Shader::IProgramObject* shader) {
 
 
 		if (curShader == defShader) {
+			GL::RenderDataBuffer::SetMatrixStackMode(curShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 			curShader->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMatrix);
 			curShader->SetUniformMatrix4x4<float>("u_proj_mat", false, projMatrix);
 			curShader->Disable();
@@ -972,6 +973,7 @@ void CglFont::glWorldBegin(Shader::IProgramObject* shader)
 
 	if ((curShader = shader) == defShader) {
 		curShader->Enable();
+		// GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM is set later
 		curShader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	}
 
@@ -994,9 +996,9 @@ void CglFont::glWorldPrint(const float3& p, const float size, const std::string&
 
 	if (curShader == defShader) {
 		// TODO: simplify
+		GL::RenderDataBuffer::SetMatrixStackMode(curShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		curShader->SetUniformMatrix4x4<float>("u_movi_mat", false, vm * CMatrix44f(p, RgtVector, UpVector, FwdVector) * bm);
 		curShader->SetUniformMatrix2x2<float>("u_txcd_mat", false, GetTexScaleMatrix(texWidth, texHeight));
-		GL::RenderDataBuffer::SetMatrixStackMode(curShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 	} else {
 		curShader->SetUniformMatrix2x2<float>("texCoorMat", false, GetTexScaleMatrix(texWidth, texHeight));
 	}
@@ -1017,6 +1019,7 @@ void CglFont::glWorldPrint(const float3& p, const float size, const std::string&
 void CglFont::glWorldEnd(Shader::IProgramObject* shader)
 {
 	if (curShader == defShader) {
+		GL::RenderDataBuffer::SetMatrixStackMode(curShader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		curShader->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMatrix);
 		curShader->SetUniformMatrix4x4<float>("u_proj_mat", false, projMatrix);
 		curShader->Disable();

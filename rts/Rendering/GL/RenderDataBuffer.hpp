@@ -153,6 +153,7 @@ namespace GL {
 			SHDR_TRANSFORM_MMWORLD      = 6,
 			SHDR_TRANSFORM_MMHM         = 7,
 			SHDR_TRANSFORM_MMDIM        = 8,
+			SHDR_TRANSFORM_IDENTITY     = 9,
 		};
 	public:
 		RenderDataBuffer() = default;

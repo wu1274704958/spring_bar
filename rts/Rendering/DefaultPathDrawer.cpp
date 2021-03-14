@@ -79,12 +79,13 @@ void DefaultPathDrawer::DrawInMiniMap()
 	GL::RenderDataBufferC* rdbc = GL::GetRenderBufferC();
 	Shader::IProgramObject* prog = rdbc->GetShader();
 
-	const CMatrix44f& viewMat = minimap->GetViewMat(1);
-	const CMatrix44f& projMat = minimap->GetProjMat(1);
+	//const CMatrix44f& viewMat = minimap->GetViewMat(1);
+	//const CMatrix44f& projMat = minimap->GetProjMat(1);
 
 	prog->Enable();
-	prog->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMat);
-	prog->SetUniformMatrix4x4<float>("u_proj_mat", false, projMat);
+	GL::RenderDataBuffer::SetMatrixStackMode(prog, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_MMHM);
+	//prog->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMat);
+	//prog->SetUniformMatrix4x4<float>("u_proj_mat", false, projMat);
 
 	const int blkSize = pe->GetBlockSize();
 
@@ -297,8 +298,9 @@ void DefaultPathDrawer::Draw() const {
 	GL::WideLineAdapterC* wla = GL::GetWideLineAdapterC();
 
 	prog->Enable();
-	prog->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-	prog->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+	GL::RenderDataBuffer::SetMatrixStackMode(prog, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+	//prog->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+	//prog->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	wla->Setup(rdbc, globalRendering->viewSizeX, globalRendering->viewSizeY, 3.0f, camera->GetViewProjectionMatrix());
 
 	// draw paths

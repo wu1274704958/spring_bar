@@ -35,6 +35,7 @@ constexpr const char* stdShaderTmplVert = R"(
 #define SHDR_TRANSFORM_MMWORLD       6
 #define SHDR_TRANSFORM_MMHM          7
 #define SHDR_TRANSFORM_MMDIM         8
+#define SHDR_TRANSFORM_IDENTITY      9
 
 {DEFINES}
 
@@ -165,8 +166,10 @@ void Transform(vec4 vertex) {
 	case SHDR_TRANSFORM_MMDIM:
 		Transform_MMDim(vertex);
 		break;
+	case SHDR_TRANSFORM_IDENTITY:
 	default:
-		return;
+		gl_Position = vertex;
+		break;
 	};
 }
 

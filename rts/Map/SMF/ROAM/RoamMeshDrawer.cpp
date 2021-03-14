@@ -513,6 +513,7 @@ void CRoamMeshDrawer::DrawInMiniMap()
 	const CMatrix44f& projMat = minimap->GetProjMat(1);
 
 	prog->Enable();
+	GL::RenderDataBuffer::SetMatrixStackMode(prog, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_MMHM);
 	prog->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMat);
 	prog->SetUniformMatrix4x4<float>("u_proj_mat", false, projMat);
 

@@ -223,8 +223,9 @@ void ShowSplashScreen(
 	// slower than location-based SetUniform, but works without pre-initializing uniforms via CreateShader
 	// template expects a TV but argument is const TV*, tell compiler it needs to invoke matrix::operator()
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_IDENTITY);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
 	shader->SetUniform("u_tex0", 0);
 	shader->Disable();
 

@@ -91,8 +91,9 @@ void GL::GeometryBuffer::DrawDebug(const unsigned int texID, const float2 texMin
 	glBindTexture(GetTextureTarget(), texID);
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_IDENTITY);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
 
 	buffer->SafeAppend({texMins.x, texMins.y,  texMins.x, texMins.y}); // tl
 	buffer->SafeAppend({texMaxs.x, texMins.y,  texMaxs.x, texMins.y}); // tr

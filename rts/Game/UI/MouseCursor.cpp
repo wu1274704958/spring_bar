@@ -319,6 +319,7 @@ void CMouseCursor::Draw(int x, int y, float scale) const
 	glBindTexture(GL_TEXTURE_2D, image.texture);
 
 	shader->Enable();
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, cursorMat);
 	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 	shader->SetUniform("u_alpha_test_ctrl", 0.01f, 1.0f, 0.0f, 0.0f); // test > 0.01

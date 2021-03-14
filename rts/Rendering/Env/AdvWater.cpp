@@ -121,6 +121,7 @@ CAdvWater::CAdvWater(bool refractive)
 		waterShader->SetUniform("subsurf_tex", 2); // refractive
 		waterShader->SetUniform("shading_tex", 3); // refractive
 
+		// no need for matrix stack settings
 		waterShader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
 		waterShader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::Identity());
 		waterShader->SetUniform("u_forward_vec", 0.0f, 0.0f);
@@ -231,6 +232,7 @@ void CAdvWater::Draw(bool useBlending)
 	Shader::IProgramObject* ipo = waterShader;
 
 	ipo->Enable();
+	GL::RenderDataBuffer::SetMatrixStackMode(ipo, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
 	ipo->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
 	ipo->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 	ipo->SetUniform("u_forward_vec", forward.x, forward.z);
@@ -327,8 +329,9 @@ void CAdvWater::UpdateWater(CGame* game)
 		Shader::IProgramObject* shader = buffer->GetShader();
 
 		shader->Enable();
-		shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+		GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+		//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+		//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 
 		{
 			glBindTexture(GL_TEXTURE_2D, rawBumpTextures[0]);

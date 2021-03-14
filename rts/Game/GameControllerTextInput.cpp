@@ -70,8 +70,9 @@ void GameControllerTextInput::Draw() {
 		Shader::IProgramObject* shader = buffer->GetShader();
 
 		shader->Enable();
-		shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-		shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+		GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+		//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+		//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 		buffer->SafeAppend({{caretScrPos             , inputTextPosY              , 0.0f}, {caretIllum, caretIllum, caretIllum, 0.75f}}); // tl
 		buffer->SafeAppend({{caretScrPos             , inputTextPosY + caretHeight, 0.0f}, {caretIllum, caretIllum, caretIllum, 0.75f}}); // bl
 		buffer->SafeAppend({{caretScrPos + caretWidth, inputTextPosY + caretHeight, 0.0f}, {caretIllum, caretIllum, caretIllum, 0.75f}}); // br

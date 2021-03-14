@@ -529,8 +529,9 @@ void ProfileDrawer::DrawScreen()
 	Shader::IProgramObject* shader = buffer->GetShader();
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_ORTHO01);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, CMatrix44f::Identity());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, CMatrix44f::ClipOrthoProj01());
 
 	font->SetTextColor(1.0f, 1.0f, 0.5f, 0.8f);
 

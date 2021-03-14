@@ -55,6 +55,7 @@ void CommandDrawer::Draw(const CCommandAI* cai, bool onMiniMap) const {
 	const auto& DrawBuffer = [&viewMat, &projMat](GL::RenderDataBufferC* rdb, Shader::IProgramObject* ipo) {
 		// hand off all surface circles
 		ipo->Enable();
+		GL::RenderDataBuffer::SetMatrixStackMode(ipo, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_UNIFORM);
 		ipo->SetUniformMatrix4x4<float>("u_movi_mat", false, viewMat);
 		ipo->SetUniformMatrix4x4<float>("u_proj_mat", false, projMat);
 		rdb->Submit(GL_LINES);

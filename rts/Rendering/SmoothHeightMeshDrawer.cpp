@@ -25,8 +25,9 @@ void SmoothHeightMeshDrawer::Draw(float yoffset) {
 	Shader::IProgramObject* shader = buffer->GetShader();
 
 	shader->Enable();
-	shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
-	shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
+	GL::RenderDataBuffer::SetMatrixStackMode(shader, GL::RenderDataBuffer::ShaderTransformType::SHDR_TRANSFORM_CAM_PLAYER);
+	//shader->SetUniformMatrix4x4<float>("u_movi_mat", false, camera->GetViewMatrix());
+	//shader->SetUniformMatrix4x4<float>("u_proj_mat", false, camera->GetProjectionMatrix());
 
 	for (unsigned int zq = 0; zq <= numQuadsZ; zq++) {
 		for (unsigned int xq = 0; xq <= numQuadsX; xq++) {
