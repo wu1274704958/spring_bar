@@ -23,6 +23,9 @@
 #include "System/Sync/HsiehHash.h"
 #include "System/SafeUtil.h"
 #include "System/TimeProfiler.h"
+#include "System/Config/ConfigHandler.h"
+
+#include "taskflow/taskflow.hpp"
 
 #ifdef USE_UNSYNCED_HEIGHTMAP
 #include "Game/GlobalUnsynced.h"
@@ -544,10 +547,14 @@ void CReadMap::UpdateHeightMapSynced(const SRectangle& hgtMapRect, bool initiali
 
 void CReadMap::UpdateHeightBounds(int syncFrame)
 {
-	int dataChunk = syncFrame % GAME_SPEED;
+	SCOPED_TIMER("CReadMap::UpdateHeightBounds");
 
-	int idxBeg = (dataChunk + 0) * mapDims.mapxp1 * mapDims.mapyp1 / GAME_SPEED;
-	int idxEnd = (dataChunk + 1) * mapDims.mapxp1 * mapDims.mapyp1 / GAME_SPEED;
+	static constexpr int UPDATE_PACING_PERIOD = GAME_SPEED; //tune if needed
+
+	int dataChunk = syncFrame % UPDATE_PACING_PERIOD;
+
+	int idxBeg = (dataChunk + 0) * mapDims.mapxp1 * mapDims.mapyp1 / UPDATE_PACING_PERIOD;
+	int idxEnd = (dataChunk + 1) * mapDims.mapxp1 * mapDims.mapyp1 / UPDATE_PACING_PERIOD;
 
 	if (dataChunk == 0) {
 		if (syncFrame > 0)
@@ -555,14 +562,41 @@ void CReadMap::UpdateHeightBounds(int syncFrame)
 
 		tempHeightBounds.x = std::numeric_limits<float>::max();
 		tempHeightBounds.y = std::numeric_limits<float>::lowest();
-	}
+	};
 
-	for (int idx = idxBeg; idx < idxEnd; ++idx) {
-		float h = (*heightMapSyncedPtr)[idx];
+#if 0
+	static tf::Executor executor{ std::max(configHandler->GetInt("WorkerThreadCount"), 1) };
+	tf::Taskflow taskflow;
+
+	std::vector<float>::iterator iterBeg = heightMapSyncedPtr->begin(); std::advance(iterBeg, idxBeg);
+	std::vector<float>::iterator iterEnd = heightMapSyncedPtr->begin(); std::advance(iterEnd, idxEnd);
+
+	taskflow.reduce(
+		iterBeg,
+		iterEnd,
+		tempHeightBounds.x,
+		[](float& l, const auto& r) {
+			return std::min(l, r);
+		}
+	);
+	taskflow.reduce(
+		iterBeg,
+		iterEnd,
+		tempHeightBounds.y,
+		[](float& l, const auto& r) {
+			return std::max(l, r);
+		}
+	);
+	executor.run(taskflow).get();
+#else
+	for (int idx = idxBeg; idx < idxEnd; ++idx)
+	{
+		const float h = heightMapSyncedPtr->at(idx);
 
 		tempHeightBounds.x = std::min(h, tempHeightBounds.x);
 		tempHeightBounds.y = std::max(h, tempHeightBounds.y);
 	}
+#endif
 }
 
 void CReadMap::UpdateCenterHeightmap(const SRectangle& rect, bool initialize)
