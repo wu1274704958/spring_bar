@@ -12,8 +12,8 @@
 #include "Rendering/GL/myGL.h"
 
 
-struct VAO;
-struct VBO;
+class VAO;
+class VBO;
 struct LuaVBOImpl;
 
 class LuaVAOImpl {
