@@ -2309,7 +2309,7 @@ int LuaUnsyncedCtrl::SetUnitDefImage(lua_State* L)
 
 	if (lua_isnoneornil(L, 2)) {
 		// reset to default texture
-		unitDrawer->SetUnitDefImage(ud, ud->buildPicName);
+		unitDrawer->UnitDrawerData().SetUnitDefImage(ud, ud->buildPicName);
 		return 0;
 	}
 
@@ -2319,7 +2319,7 @@ int LuaUnsyncedCtrl::SetUnitDefImage(lua_State* L)
 	const std::string& texName = lua_tostring(L, 2);
 
 	if (texName[0] != LuaTextures::prefix) { // '!'
-		unitDrawer->SetUnitDefImage(ud, texName);
+		unitDrawer->UnitDrawerData().SetUnitDefImage(ud, texName);
 		return 0;
 	}
 
@@ -2329,7 +2329,7 @@ int LuaUnsyncedCtrl::SetUnitDefImage(lua_State* L)
 	if (tex == nullptr)
 		return 0;
 
-	unitDrawer->SetUnitDefImage(ud, tex->id, tex->xsize, tex->ysize);
+	unitDrawer->UnitDrawerData().SetUnitDefImage(ud, tex->id, tex->xsize, tex->ysize);
 	return 0;
 }
 

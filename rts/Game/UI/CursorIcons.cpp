@@ -163,7 +163,7 @@ void CCursorIcons::DrawBuilds()
 		glTranslatef3(it->pos);
 		glRotatef(it->facing * 90.0f, 0.0f, 1.0f, 0.0f);
 
-		CUnitDrawer::DrawIndividualDefAlpha(unitDefHandler->GetUnitDefByID(-(it->cmd)), it->team, false);
+		unitDrawer->DrawIndividualDefAlpha(unitDefHandler->GetUnitDefByID(-(it->cmd)), it->team, false);
 
 		glPopMatrix();
 	}

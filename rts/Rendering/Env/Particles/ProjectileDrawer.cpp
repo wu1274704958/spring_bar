@@ -258,7 +258,7 @@ void CProjectileDrawer::Init() {
 
 	renderProjectiles.reserve(projectileHandler.maxParticles + projectileHandler.maxNanoParticles);
 
-	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_OTHER; modelType++) {
+	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
 		modelRenderers[modelType].Init();
 	}
 
@@ -291,7 +291,7 @@ void CProjectileDrawer::Kill() {
 	spring::SafeDelete(textureAtlas);
 	spring::SafeDelete(groundFXAtlas);
 
-	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_OTHER; modelType++) {
+	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
 		modelRenderers[modelType].Kill();
 	}
 
@@ -645,7 +645,7 @@ void CProjectileDrawer::DrawProjectilesMiniMap()
 	lines->Initialize();
 	points->Initialize();
 
-	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_OTHER; modelType++) {
+	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
 		const auto& mdlRenderer = modelRenderers[modelType];
 		// const auto& projBinKeys = mdlRenderer.GetObjectBinKeys();
 
@@ -732,7 +732,7 @@ void CProjectileDrawer::Draw(bool drawReflection, bool drawRefraction) {
 	{
 		unitDrawer->SetupOpaqueDrawing(false);
 
-		for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_OTHER; modelType++) {
+		for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
 			unitDrawer->PushModelRenderState(modelType);
 			DrawProjectiles(modelType, drawReflection, drawRefraction);
 			unitDrawer->PopModelRenderState(modelType);
@@ -814,7 +814,7 @@ void CProjectileDrawer::DrawShadowPass()
 	fxVA->Initialize();
 
 	{
-		for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_OTHER; modelType++) {
+		for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
 			DrawProjectilesShadow(modelType);
 		}
 

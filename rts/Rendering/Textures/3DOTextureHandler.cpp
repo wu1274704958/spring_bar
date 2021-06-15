@@ -178,7 +178,7 @@ std::vector<TexFile> C3DOTextureHandler::LoadTexFiles()
 	CSimpleParser parser(teamTexFile);
 
 	spring::unordered_set<std::string> teamTexes;
-	spring::unordered_set<string> usedNames;
+	spring::unordered_set<std::string> usedNames;
 
 	while (!parser.Eof()) {
 		teamTexes.insert(StringToLower(parser.GetCleanLine()));

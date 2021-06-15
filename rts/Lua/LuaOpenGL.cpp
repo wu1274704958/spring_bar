@@ -1432,9 +1432,9 @@ static void GLObjectShape(lua_State* L, const SolidObjectDef* def)
 
 	// does not set the full state by default
 	if (luaL_optboolean(L, 5, true)) {
-		CUnitDrawer::DrawIndividualDefOpaque(def, luaL_checkint(L, 2), rawState, toScreen);
+		unitDrawer->DrawIndividualDefOpaque(def, luaL_checkint(L, 2), rawState, toScreen);
 	} else {
-		CUnitDrawer::DrawIndividualDefAlpha(def, luaL_checkint(L, 2), rawState, toScreen);
+		unitDrawer->DrawIndividualDefAlpha(def, luaL_checkint(L, 2), rawState, toScreen);
 	}
 }
 

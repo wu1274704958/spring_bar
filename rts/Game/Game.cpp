@@ -1193,7 +1193,7 @@ bool CGame::UpdateUnsynced(const spring_time currentTime)
 	// set camera
 	camHandler->UpdateController(playerHandler.Player(gu->myPlayerNum), gu->fpsMode, fullscreenEdgeMove, windowedEdgeMove);
 
-	unitDrawer->Update();
+	unitDrawer->UnitDrawerData().Update();
 	lineDrawer.UpdateLineStipple();
 
 
@@ -1340,7 +1340,7 @@ bool CGame::Draw() {
 
 	{
 		SCOPED_TIMER("Draw::Screen");
-		if (unitDrawer->useScreenIcons)
+		if (unitDrawer->UnitDrawerData().useScreenIcons)
 			unitDrawer->DrawUnitIconsScreen();
 
 		eventHandler.DrawScreenEffects();
@@ -1555,7 +1555,7 @@ void CGame::SimFrame() {
 		// dead ghosts have to be updated in sim, after los,
 		// to make sure they represent the current knowledge correctly.
 		// should probably be split from drawer
-		unitDrawer->UpdateGhostedBuildings();
+		unitDrawer->UnitDrawerData().UpdateGhostedBuildings();
 		interceptHandler.Update(false);
 
 		teamHandler.GameFrame(gs->frameNum);

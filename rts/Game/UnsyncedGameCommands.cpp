@@ -2729,7 +2729,7 @@ public:
 	bool Execute(const UnsyncedAction& action) const final {
 		if (!action.GetArgs().empty()) {
 			const int iconDist = atoi(action.GetArgs().c_str());
-			unitDrawer->SetUnitIconDist((float)iconDist);
+			unitDrawer->UnitDrawerData().SetUnitIconDist((float)iconDist);
 			configHandler->Set("UnitIconDist", iconDist);
 			LOG("Set UnitIconDist to %i", iconDist);
 		} else {
@@ -2746,9 +2746,9 @@ public:
 			"Set whether unit icons are drawn as an UI element (true) or old LOD-like style (false, default).") {}
 
 	bool Execute(const UnsyncedAction& action) const final {
-		InverseOrSetBool(unitDrawer->useScreenIcons, action.GetArgs());
-		configHandler->Set("UnitIconsAsUI", unitDrawer->useScreenIcons ? 1 : 0);
-		LogSystemStatus("Draw unit icons as UI: ", unitDrawer->useScreenIcons);
+		InverseOrSetBool(unitDrawer->UnitDrawerData().useScreenIcons, action.GetArgs());
+		configHandler->Set("UnitIconsAsUI", unitDrawer->UnitDrawerData().useScreenIcons ? 1 : 0);
+		LogSystemStatus("Draw unit icons as UI: ", unitDrawer->UnitDrawerData().useScreenIcons);
 		return true;
 	}
 };
@@ -2762,12 +2762,12 @@ public:
 	{
 		if (!action.GetArgs().empty()) {
 			const float iconScale = (float) atof(action.GetArgs().c_str());
-			unitDrawer->SetUnitIconScaleUI(iconScale);
+			unitDrawer->UnitDrawerData().SetUnitIconScaleUI(iconScale);
 			configHandler->Set("UnitIconScaleUI", iconScale);
 			LOG("Set UnitIconScaleUI to %f", iconScale);
 		}
 		else
-			LOG("UnitIconScaleUI is %f", unitDrawer->GetUnitIconScaleUI());
+			LOG("UnitIconScaleUI is %f", unitDrawer->UnitDrawerData().GetUnitIconScaleUI());
 
 		return true;
 	}
@@ -2783,12 +2783,12 @@ public:
 		if (!action.GetArgs().empty())
 		{
 			const float iconFadeStart = (float) atof(action.GetArgs().c_str());
-			unitDrawer->SetUnitIconFadeStart(iconFadeStart);
+			unitDrawer->UnitDrawerData().SetUnitIconFadeStart(iconFadeStart);
 			configHandler->Set("UnitIconFadeStart", iconFadeStart);
 			LOG("Set UnitIconFadeStart to %f", iconFadeStart);
 		}
 		else
-			LOG("UnitIconFadeStart is %f", unitDrawer->GetUnitIconFadeStart());
+			LOG("UnitIconFadeStart is %f", unitDrawer->UnitDrawerData().GetUnitIconFadeStart());
 
 		return true;
 	}
@@ -2804,12 +2804,12 @@ public:
 		if (!action.GetArgs().empty())
 		{
 			const float iconFadeVanish = (float) atof(action.GetArgs().c_str());
-			unitDrawer->SetUnitIconFadeVanish(iconFadeVanish);
+			unitDrawer->UnitDrawerData().SetUnitIconFadeVanish(iconFadeVanish);
 			configHandler->Set("UnitIconFadeVanish", iconFadeVanish);
 			LOG("Set UnitIconFadeVanish to %f", iconFadeVanish);
 		}
 		else
-			LOG("UnitIconFadeVanish is %f", unitDrawer->GetUnitIconFadeVanish());
+			LOG("UnitIconFadeVanish is %f", unitDrawer->UnitDrawerData().GetUnitIconFadeVanish());
 
 		return true;
 	}
@@ -2821,9 +2821,9 @@ public:
 			"Set whether unit icons are hidden when UI is hidden.") {}
 
 	bool Execute(const UnsyncedAction& action) const final {
-		InverseOrSetBool(unitDrawer->iconHideWithUI, action.GetArgs());
-		configHandler->Set("IconsHideWithUI", unitDrawer->iconHideWithUI ? 1 : 0);
-		LogSystemStatus("Hide unit icons with UI: ", unitDrawer->iconHideWithUI);
+		InverseOrSetBool(unitDrawer->UnitDrawerData().iconHideWithUI, action.GetArgs());
+		configHandler->Set("IconsHideWithUI", unitDrawer->UnitDrawerData().iconHideWithUI ? 1 : 0);
+		LogSystemStatus("Hide unit icons with UI: ", unitDrawer->UnitDrawerData().iconHideWithUI);
 		return true;
 	}
 };
@@ -2837,7 +2837,7 @@ public:
 	bool Execute(const UnsyncedAction& action) const final {
 		if (!action.GetArgs().empty()) {
 			const int drawDist = atoi(action.GetArgs().c_str());
-			unitDrawer->SetUnitDrawDist((float)drawDist);
+			unitDrawer->UnitDrawerData().SetUnitDrawDist((float)drawDist);
 			configHandler->Set("UnitLodDist", drawDist);
 			LOG("Set UnitLodDist to %i", drawDist);
 		} else {

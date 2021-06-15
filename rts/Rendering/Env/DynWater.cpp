@@ -1032,7 +1032,7 @@ void CDynWater::AddShipWakes()
 	va2->Initialize();
 
 	{
-		const auto& units = unitDrawer->GetUnsortedUnits();
+		const auto& units = unitDrawer->UnitDrawerData().GetUnsortedUnits();
 		const int nadd = units.size() * 4;
 
 		va->EnlargeArrays(nadd, 0, VA_SIZE_TN);

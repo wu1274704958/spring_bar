@@ -23,6 +23,7 @@
 #include "Rendering/LineDrawer.h"
 #include "Rendering/Models/3DModel.h"
 #include "Rendering/UnitDrawer.h"
+#include "Rendering/Units/UnitDrawerData.h"
 #include "Sim/Features/Feature.h"
 #include "Sim/Features/FeatureHandler.h"
 #include "Sim/Misc/DamageArrayHandler.h"
@@ -1072,7 +1073,7 @@ void CAICallback::DrawUnit(
 	bool drawBorder,
 	int facing
 ) {
-	CUnitDrawer::TempDrawUnit tdu;
+	CUnitDrawerData::TempDrawUnit tdu;
 	tdu.unitDef = unitDefHandler->GetUnitDefByName(unitName);
 
 	if (tdu.unitDef == nullptr) {
@@ -1090,7 +1091,7 @@ void CAICallback::DrawUnit(
 	tdu.drawAlpha = transparent;
 	tdu.drawBorder = drawBorder;
 
-	unitDrawer->AddTempDrawUnit(tdu);
+	unitDrawer->UnitDrawerData().AddTempDrawUnit(tdu);
 }
 
 
