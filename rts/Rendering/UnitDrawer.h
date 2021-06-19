@@ -24,25 +24,26 @@ class CUnitDrawer
 {
 public:
 	CUnitDrawer() {}
-	virtual ~CUnitDrawer() = 0;
+	virtual ~CUnitDrawer() {};
 public:
 	template<typename T>
-	static CUnitDrawer* GetInstance() {
-		static T instance;
-		return &instance;
+	static void InitInstance(int t) {
+		if (unitDrawers[t] == nullptr)
+			unitDrawers[t] = new T();
+	}
+	static void KillInstance(int t) {
+		spring::SafeDelete(unitDrawers[t]);
 	}
 
 	static void InitStatic();
 	static void KillStatic(bool reload);
 
-	static void ForceLegacyPath() {
-		forceReselection = true;
-		forceLegacyPath = true;
-		SelectImplementation(); //do immeditely?
-	}
+	static void ForceLegacyPath();
 
-	static void SelectImplementation();
+	static void SelectImplementation(bool forceReselection = false);
 	static void SelectImplementation(int targetImplementation);
+
+	static void Update();
 
 	// Set/Get state from outside
 	static void SetDrawForwardPass(bool b) { drawForward = b; }
@@ -51,7 +52,7 @@ public:
 	static bool DrawDeferred() { return drawDeferred; }
 
 	static bool UseAdvShading() { return advShading; }
-	static bool& UseAdvShadingRef() { forceReselection = true; return advShading; }
+	static bool& UseAdvShadingRef() { reselectionRequested = true; return advShading; }
 	static bool& WireFrameModeRef() { return wireFrameMode; }
 public:
 	// Interface with CUnitDrawerData
@@ -71,49 +72,61 @@ public:
 	virtual bool IsLegacy() const { return true; }
 
 	// Setup Fixed State
-	virtual void SetupOpaqueDrawing(bool deferredPass) = 0;
-	virtual void ResetOpaqueDrawing(bool deferredPass) = 0;
-	virtual void SetupAlphaDrawing(bool deferredPass) = 0;
-	virtual void ResetAlphaDrawing(bool deferredPass) = 0;
+	virtual void SetupOpaqueDrawing(bool deferredPass) const = 0;
+	virtual void ResetOpaqueDrawing(bool deferredPass) const = 0;
+	virtual void SetupAlphaDrawing(bool deferredPass) const = 0;
+	virtual void ResetAlphaDrawing(bool deferredPass) const = 0;
 
 	// alpha.x := alpha-value
 	// alpha.y := alpha-pass (true or false)
 	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const = 0;
 
 	// DrawUnit*
-	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) = 0;
-	virtual void DrawUnitModelBeingBuiltShadow(const CUnit* unit, bool noLuaCall) = 0;
-	virtual void DrawUnitModelBeingBuiltOpaque(const CUnit* unit, bool noLuaCall) = 0;
-	virtual void DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) = 0;
-	virtual void DrawUnitTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) = 0;
-	virtual void DrawIndividual(const CUnit* unit, bool noLuaCall) = 0;
-	virtual void DrawIndividualNoTrans(const CUnit* unit, bool noLuaCall) = 0;
+	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawUnitModelBeingBuiltShadow(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawUnitModelBeingBuiltOpaque(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const = 0;
+	virtual void DrawUnitTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const = 0;
+	virtual void DrawIndividual(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawIndividualNoTrans(const CUnit* unit, bool noLuaCall) const = 0;
 
 	// DrawIndividualDef*
-	virtual void DrawIndividualDefOpaque(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) = 0;
-	virtual void DrawIndividualDefAlpha(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) = 0;
+	virtual void DrawIndividualDefOpaque(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const = 0;
+	virtual void DrawIndividualDefAlpha(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const = 0;
 
 	// Draw*
-	virtual void Draw(bool drawReflection, bool drawRefraction = false) = 0;
-	virtual void DrawOpaquePass(bool deferredPass, bool drawReflection, bool drawRefraction) = 0;
-	virtual void DrawShadowPass() = 0;
-	virtual void DrawAlphaPass() = 0;
+	virtual void Draw(bool drawReflection, bool drawRefraction = false) const = 0;
+	virtual void DrawOpaquePass(bool deferredPass, bool drawReflection, bool drawRefraction) const = 0;
+	virtual void DrawShadowPass() const = 0;
+	virtual void DrawAlphaPass() const = 0;
 
 	// Icons Minimap
 	virtual void DrawUnitMiniMapIcons() const = 0;
-	virtual void UpdateUnitDefMiniMapIcons(const UnitDef* ud) = 0;
+	        void UpdateUnitDefMiniMapIcons(const UnitDef* ud) { unitDrawerData.UpdateUnitDefMiniMapIcons(ud); }
 
 	// Icons Map
-	virtual void DrawUnitIcons() = 0;
-	virtual void DrawUnitIconsScreen() = 0;
-	//virtual void DrawUnitMiniMapIcon(const CUnit* unit, CVertexArray* va) const = 0;
+	virtual void DrawUnitIcons() const = 0;
+	virtual void DrawUnitIconsScreen() const = 0;
 
 	// Build Squares
-	        bool ShowUnitBuildSquare(const BuildInfo& buildInfo) { return ShowUnitBuildSquare(buildInfo, std::vector<Command>()); }
-	virtual bool ShowUnitBuildSquare(const BuildInfo& buildInfo, const std::vector<Command>& commands) = 0;
+	        bool ShowUnitBuildSquare(const BuildInfo& buildInfo) const { return ShowUnitBuildSquare(buildInfo, std::vector<Command>()); }
+	virtual bool ShowUnitBuildSquare(const BuildInfo& buildInfo, const std::vector<Command>& commands) const = 0;
 protected:
-	virtual void Enable(bool deferredPass, bool alphaPass) = 0;
-	virtual void Disable(bool deferredPass) = 0;
+	bool CanDrawOpaqueUnit(const CUnit* unit, bool drawReflection, bool drawRefraction) const;
+	bool CanDrawOpaqueUnitShadow(const CUnit* unit) const;
+
+	virtual void DrawOpaqueUnitsShadow(int modelType) const = 0;
+	virtual void DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const = 0;
+
+	virtual void DrawAlphaUnits(int modelType) const = 0;
+
+	virtual void DrawOpaqueAIUnits(int modelType) const = 0;
+	virtual void DrawAlphaAIUnits(int modelType) const = 0;
+
+	virtual void DrawGhostedBuildings(int modelType) const = 0;
+protected:
+	virtual void Enable(bool deferredPass, bool alphaPass) const = 0;
+	virtual void Disable(bool deferredPass) const = 0;
 
 	virtual void SetNanoColor(const float4& color) const = 0;
 public:
@@ -147,7 +160,7 @@ public:
 	inline static bool drawDeferred = false;
 
 	inline static bool cubeMapInitialized = false;
-	inline static bool advShading = false;
+	inline static bool advShading = true;
 	inline static bool wireFrameMode = false;
 
 	/// <summary>
@@ -158,8 +171,8 @@ public:
 	/// </summary>
 	inline static float4 alphaValues = {};
 private:
-	inline static bool forceReselection = true;
-	inline static int selectedImplementation = UnitDrawerTypes::UNIT_DRAWER_FFP;
+	inline static bool reselectionRequested = true;
+	//inline static int selectedImplementation = UnitDrawerTypes::UNIT_DRAWER_FFP;
 	inline static GL::LightHandler lightHandler;
 	inline static GL::GeometryBuffer* geomBuffer = nullptr;
 protected:
@@ -168,52 +181,90 @@ protected:
 
 class CUnitDrawerLegacy : public CUnitDrawer {
 public:
+	virtual ~CUnitDrawerLegacy() override {};
+public:
+	virtual bool CanEnable() const { return true; }
 	// Inherited via CUnitDrawer
-	virtual void SetupOpaqueDrawing(bool deferredPass) override;
-	virtual void ResetOpaqueDrawing(bool deferredPass) override;
+	virtual void SetupOpaqueDrawing(bool deferredPass) const override;
+	virtual void ResetOpaqueDrawing(bool deferredPass) const override;
 
-	virtual void SetupAlphaDrawing(bool deferredPass) override;
-	virtual void ResetAlphaDrawing(bool deferredPass) override;
+	virtual void SetupAlphaDrawing(bool deferredPass) const override;
+	virtual void ResetAlphaDrawing(bool deferredPass) const override;
 
 	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
 
-	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) override;
+	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) const override;
+	virtual void DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const override;
+	virtual void DrawUnitTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const override;
+
+	virtual void Draw(bool drawReflection, bool drawRefraction = false) const override;
+	virtual void DrawOpaquePass(bool deferredPass, bool drawReflection, bool drawRefraction) const override;
+	virtual void DrawShadowPass() const override;
+	virtual void DrawAlphaPass() const override;
+
+	virtual void DrawUnitMiniMapIcons() const override;
+	virtual void DrawUnitIcons() const override;
+	virtual void DrawUnitIconsScreen() const override;
+protected:
+	virtual void DrawOpaqueUnitsShadow(int modelType) const override;
+	virtual void DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const override;
+
+	virtual void DrawAlphaUnits(int modelType) const override;
+
+	virtual void DrawOpaqueAIUnits(int modelType) const override;
+	virtual void DrawAlphaAIUnits(int modelType) const override;
+
+	virtual void DrawGhostedBuildings(int modelType) const override;
+
+	void DrawOpaqueUnit(CUnit* unit, bool drawReflection, bool drawRefraction) const;
+	void DrawOpaqueUnitShadow(CUnit* unit) const;
+	void DrawAlphaUnit(CUnit* unit, int modelType, bool drawGhostBuildingsPass) const;
+	void DrawOpaqueAIUnit(const CUnitDrawerData::TempDrawUnit& unit) const;
+	void DrawAlphaAIUnit(const CUnitDrawerData::TempDrawUnit& unit) const;
+	void DrawAlphaAIUnitBorder(const CUnitDrawerData::TempDrawUnit& unit) const;
+
+	void DrawUnitMiniMapIcon(const CUnit* unit, CVertexArray* va) const;
+
+	static void DrawIcon(CUnit* unit, bool useDefaultIcon);
+	void DrawIconScreenArray(const CUnit* unit, const icon::CIconData* icon, bool useDefaultIcon, const float dist, CVertexArray* va) const;
 };
 
-class CUnitDrawerFFP  : public CUnitDrawerLegacy {
+class CUnitDrawerFFP final : public CUnitDrawerLegacy {
 public:
-	CUnitDrawerFFP() {}
-	virtual ~CUnitDrawerFFP() = 0;
+	CUnitDrawerFFP() {};
+	virtual ~CUnitDrawerFFP() override {};
 public:
 	// Inherited via CUnitDrawer
 	virtual void SunChanged() override {};
 
 	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
-	virtual void DrawUnitModelBeingBuiltShadow(const CUnit* unit, bool noLuaCall) override;
-	virtual void DrawUnitModelBeingBuiltOpaque(const CUnit* unit, bool noLuaCall) override;
-	virtual void DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) override;
-	virtual void DrawUnitTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) override;
-	virtual void DrawIndividual(const CUnit* unit, bool noLuaCall) override;
-	virtual void DrawIndividualNoTrans(const CUnit* unit, bool noLuaCall) override;
-	virtual void DrawIndividualDefOpaque(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) override;
-	virtual void DrawIndividualDefAlpha(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) override;
-	virtual void Draw(bool drawReflection, bool drawRefraction = false) override;
-	virtual void DrawOpaquePass(bool deferredPass, bool drawReflection, bool drawRefraction) override;
-	virtual void DrawShadowPass() override;
-	virtual void DrawAlphaPass() override;
-	virtual void DrawUnitMiniMapIcons() const override;
-	virtual void UpdateUnitDefMiniMapIcons(const UnitDef* ud) override;
-	virtual void DrawUnitIcons() override;
-	virtual void DrawUnitIconsScreen() override;
-	virtual bool ShowUnitBuildSquare(const BuildInfo& buildInfo, const std::vector<Command>& commands) override;
-	virtual void Enable(bool deferredPass, bool alphaPass) override;
-	virtual void Disable(bool deferredPass) override;
-	virtual void SetNanoColor(const float4& color) const override;
+	virtual void DrawUnitModelBeingBuiltShadow(const CUnit* unit, bool noLuaCall) const override {};
+	virtual void DrawUnitModelBeingBuiltOpaque(const CUnit* unit, bool noLuaCall) const override {};
+	virtual void DrawIndividual(const CUnit* unit, bool noLuaCall) const override {};
+	virtual void DrawIndividualNoTrans(const CUnit* unit, bool noLuaCall) const override {};
+	virtual void DrawIndividualDefOpaque(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const override {};
+	virtual void DrawIndividualDefAlpha (const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const override {};
+
+	virtual bool ShowUnitBuildSquare(const BuildInfo& buildInfo, const std::vector<Command>& commands) const override { return true; };
+	virtual void Enable(bool deferredPass, bool alphaPass) const override;
+	virtual void Disable(bool deferredPass) const override;
+	virtual void SetNanoColor(const float4& color) const override {};
+private:
+	// needed by FFP drawer-state
+	static void SetupBasicS3OTexture0();
+	static void SetupBasicS3OTexture1();
+	static void CleanupBasicS3OTexture1();
+	static void CleanupBasicS3OTexture0();
 };
 
-class CUnitDrawerARB  : public CUnitDrawer {};
-class CUnitDrawerGLSL : public CUnitDrawer {};
-class CUnitDrawerGL4  : public CUnitDrawer {};
+class CUnitDrawerARB  final : public CUnitDrawerLegacy {};
+class CUnitDrawerGLSL final : public CUnitDrawerLegacy {};
+
+class CUnitDrawerGL4  final : public CUnitDrawer {
+private:
+	bool CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall);
+};
+
 
 
 extern CUnitDrawer* unitDrawer;

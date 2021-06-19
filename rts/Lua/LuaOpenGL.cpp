@@ -1492,8 +1492,8 @@ int LuaOpenGL::UnitCommon(lua_State* L, bool applyTransform, bool callDrawUnit)
 
 	glPushAttrib(GL_ENABLE_BIT);
 
-	typedef void(CUnitDrawer::*RawDrawMemFunc)(const CUnit*, unsigned int, unsigned int, bool, bool);
-	typedef void(CUnitDrawer::*MatDrawMemFunc)(const CUnit*, bool);
+	typedef void(CUnitDrawer::*RawDrawMemFunc)(const CUnit*, unsigned int, unsigned int, bool, bool) const;
+	typedef void(CUnitDrawer::*MatDrawMemFunc)(const CUnit*, bool) const;
 
 	const RawDrawMemFunc rawDrawFuncs[2] = {&CUnitDrawer::DrawUnitNoTrans, &CUnitDrawer::DrawUnitTrans};
 	const MatDrawMemFunc matDrawFuncs[2] = {&CUnitDrawer::DrawIndividualNoTrans, &CUnitDrawer::DrawIndividual};

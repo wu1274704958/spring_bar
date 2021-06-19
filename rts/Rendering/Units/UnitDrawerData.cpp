@@ -10,12 +10,14 @@
 #include "Game/Camera.h"
 #include "Game/CameraHandler.h"
 #include "Game/UI/MiniMap.h"
+#include "Rendering/UnitDrawer.h"
 #include "Rendering/LuaObjectDrawer.h"
 #include "Rendering/IconHandler.h"
 #include "Rendering/Textures/Bitmap.h"
 #include "Rendering/Env/IGroundDecalDrawer.h"
 #include "Sim/Units/UnitDef.h"
 #include "Sim/Units/UnitDefHandler.h"
+#include "Sim/Units/UnitHandler.h"
 #include "Sim/Units/Unit.h"
 #include "Sim/Misc/LosHandler.h"
 #include "Sim/Misc/TeamHandler.h"
@@ -96,6 +98,8 @@ CUnitDrawerData::~CUnitDrawerData()
 
 void CUnitDrawerData::Update()
 {
+	iconSizeBase = std::max(12.0f, std::max(globalRendering->viewSizeX, globalRendering->viewSizeY) * iconSizeMult * iconScale);
+
 	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
 		UpdateTempDrawUnits(tempOpaqueUnits[modelType]);
 		UpdateTempDrawUnits(tempAlphaUnits[modelType]);
@@ -179,6 +183,15 @@ const icon::CIconData* CUnitDrawerData::GetUnitIcon(const CUnit* unit)
 		iconData = icon::iconHandler.GetDefaultIconData();
 
 	return iconData;
+}
+
+void CUnitDrawerData::UpdateUnitDefMiniMapIcons(const UnitDef* ud)
+{
+	for (int teamNum = 0; teamNum < teamHandler.ActiveTeams(); teamNum++) {
+		for (const CUnit* unit : unitHandler.GetUnitsByTeamAndDef(teamNum, ud->id)) {
+			UpdateUnitMiniMapIcon(unit, true, false);
+		}
+	}
 }
 
 void CUnitDrawerData::UpdateUnitMiniMapIcon(const CUnit* unit, bool forced, bool killed)

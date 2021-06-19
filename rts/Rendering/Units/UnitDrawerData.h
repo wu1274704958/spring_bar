@@ -7,6 +7,7 @@
 #include "System/float3.h"
 #include "Rendering/Models/ModelRenderContainer.h"
 #include "Rendering/UnitDefImage.h"
+#include "Game/GlobalUnsynced.h"
 
 struct SolidObjectGroundDecal;
 struct S3DModel;
@@ -40,7 +41,7 @@ public:
 class CUnitDrawerData : public CEventClient {
 public:
 	// CEventClient interface
-	bool WantsEvent(const std::string & eventName) {
+	bool WantsEvent(const std::string& eventName) {
 		return
 			eventName == "RenderUnitCreated" || eventName == "RenderUnitDestroyed" ||
 			eventName == "UnitCloaked" || eventName == "UnitDecloaked" ||
@@ -58,10 +59,10 @@ public:
 	void UnitLeftRadar(const CUnit* unit, int allyTeam) { UnitEnteredRadar(unit, allyTeam); };
 
 	void UnitEnteredLos(const CUnit* unit, int allyTeam);
-	void UnitLeftLos(const CUnit * unit, int allyTeam);
+	void UnitLeftLos(const CUnit* unit, int allyTeam);
 
-	void UnitCloaked(const CUnit * unit);
-	void UnitDecloaked(const CUnit * unit);
+	void UnitCloaked(const CUnit* unit);
+	void UnitDecloaked(const CUnit* unit);
 
 	void PlayerChanged(int playerNum);
 	void SunChanged();
@@ -93,9 +94,9 @@ public:
 	}
 
 	// IconsAsUI
-	float GetUnitIconScaleUI() { return iconScale; }
-	float GetUnitIconFadeStart() { return iconFadeStart; }
-	float GetUnitIconFadeVanish() { return iconFadeVanish; }
+	float GetUnitIconScaleUI() const { return iconScale; }
+	float GetUnitIconFadeStart() const { return iconFadeStart; }
+	float GetUnitIconFadeVanish() const { return iconFadeVanish; }
 	void SetUnitIconScaleUI(float scale) { iconScale = std::clamp(scale, 0.5f, 2.0f); }
 	void SetUnitIconFadeStart(float scale) { iconFadeStart = std::clamp(scale, 1.0f, 10000.0f); }
 	void SetUnitIconFadeVanish(float scale) { iconFadeVanish = std::clamp(scale, 1.0f, 10000.0f); }
@@ -109,14 +110,31 @@ public:
 
 	void Update();
 	void UpdateGhostedBuildings();
+	void UpdateUnitDefMiniMapIcons(const UnitDef* ud);
 public:
 	const std::vector<CUnit*>& GetUnsortedUnits() const { return unsortedUnits; }
 
-	ModelRenderContainer<CUnit>& GetOpaqueModelRenderer(int modelType) { return opaqueModelRenderers[modelType]; }
-	ModelRenderContainer<CUnit>& GetAlphaModelRenderer(int modelType) { return alphaModelRenderers[modelType]; }
+	const ModelRenderContainer<CUnit>& GetOpaqueModelRenderer(int modelType) const { return opaqueModelRenderers[modelType]; }
+	const ModelRenderContainer<CUnit>& GetAlphaModelRenderer(int modelType) const { return  alphaModelRenderers[modelType]; }
 
 	const std::vector<UnitDefImage>& GetUnitDefImages() const { return unitDefImages; }
-	      std::vector<UnitDefImage>& GetUnitDefImages()       { return unitDefImages; }
+	std::vector<UnitDefImage>& GetUnitDefImages() { return unitDefImages; }
+
+	const std::vector<TempDrawUnit>& GetTempOpaqueDrawUnits(int modelType) const { return tempOpaqueUnits[modelType]; }
+	const std::vector<TempDrawUnit>& GetTempAlphaDrawUnits(int modelType) const { return  tempAlphaUnits[modelType]; }
+
+	const std::vector<GhostSolidObject*>& GetDeadGhostBuildings(int allyTeam, int modelType) const {
+		assert((unsigned)gu->myAllyTeam < deadGhostBuildings.size());
+		return deadGhostBuildings[allyTeam][modelType];
+	}
+	const std::vector<CUnit*           >& GetLiveGhostBuildings(int allyTeam, int modelType) const {
+		assert((unsigned)gu->myAllyTeam < liveGhostBuildings.size());
+		return liveGhostBuildings[allyTeam][modelType];
+	}
+
+	const spring::unsynced_map<icon::CIconData*, std::vector<const CUnit*> >& GetUnitsByIcon() const { return unitsByIcon; }
+
+	const std::vector<CUnit*>& GetIconUnits() const { return iconUnits; }
 private:
 	const icon::CIconData* GetUnitIcon(const CUnit* unit);
 
@@ -129,10 +147,11 @@ private:
 
 	/// Returns true if the given unit should be drawn as icon in the current frame.
 	bool DrawAsIcon(const CUnit* unit, const float sqUnitCamDist) const;
-	bool DrawAsIconScreen(CUnit* unit) const;
+	//bool DrawAsIconScreen(CUnit* unit) const;
 public:
 	// lenghts & distances
 	float unitDrawDist;
+	float unitDrawDistSqr;
 	float unitIconDist;
 	float iconLength;
 
@@ -141,6 +160,12 @@ public:
 
 	// IconsAsUI
 	bool useScreenIcons = false;
+	float iconZoomDist;
+	float iconSizeBase = 32.0f;
+	float iconScale = 1.0f;
+	float iconFadeStart = 3000.0f;
+	float iconFadeVanish = 1000.0f;
+
 private:
 	std::array<ModelRenderContainer<CUnit>, MODELTYPE_CNT> opaqueModelRenderers;
 	std::array<ModelRenderContainer<CUnit>, MODELTYPE_CNT> alphaModelRenderers;
@@ -165,8 +190,7 @@ private:
 
 	std::vector<UnitDefImage> unitDefImages;
 
-	// lenghts & distances
-	float unitDrawDistSqr;
+
 
 	// icons
 	bool useDistToGroundForIcons;
@@ -176,9 +200,4 @@ private:
 
 	// IconsAsUI
 	static constexpr float iconSizeMult = 0.005f; // 1/200
-	float iconSizeBase = 32.0f;
-	float iconScale = 1.0f;
-	float iconFadeStart = 3000.0f;
-	float iconFadeVanish = 1000.0f;
-	float iconZoomDist;
 };

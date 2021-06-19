@@ -77,7 +77,7 @@ typedef std::function<void(CFeatureDrawer*, const CFeature*, unsigned int, unsig
 // while this can actually be done with C++11 forward magic, the code becomes unreadable)
 //
 typedef void(CEventHandler::*EventFunc)();
-typedef void(CUnitDrawer   ::*   UnitDrawFunc)(const CUnit*,    unsigned int, unsigned int, bool, bool);
+typedef void(CUnitDrawer   ::*   UnitDrawFunc)(const CUnit*,    unsigned int, unsigned int, bool, bool) const;
 typedef void(CFeatureDrawer::*FeatureDrawFunc)(const CFeature*, unsigned int, unsigned int, bool, bool);
 
 #endif
