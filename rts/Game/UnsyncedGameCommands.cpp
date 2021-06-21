@@ -402,6 +402,23 @@ public:
 	}
 };
 
+class ModelDrawerTypeActionExecutor : public IUnsyncedActionExecutor {
+public:
+	ModelDrawerTypeActionExecutor() : IUnsyncedActionExecutor("ModelDrawer",
+		"Forces particular Unit/Feature drawer type") {}
+
+	bool Execute(const UnsyncedAction& action) const {
+
+		int prefModelDrawer = -1;
+		sscanf((action.GetArgs()).c_str(), "%i", &prefModelDrawer);
+
+		if (prefModelDrawer == -1)
+			return false;
+
+		CUnitDrawer::PreferedDrawerTypeRef() = prefModelDrawer;
+		return true;
+	}
+};
 
 
 class SayActionExecutor : public IUnsyncedActionExecutor {
@@ -3445,6 +3462,7 @@ void UnsyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<WaterActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<AdvModelShadingActionExecutor>()); // [maint]
 	AddActionExecutor(AllocActionExecutor<AdvMapShadingActionExecutor>()); // [maint]
+	AddActionExecutor(AllocActionExecutor<ModelDrawerTypeActionExecutor>()); // [maint]
 	AddActionExecutor(AllocActionExecutor<SayActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<SayPrivateActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<SayPrivateByPlayerIDActionExecutor>());

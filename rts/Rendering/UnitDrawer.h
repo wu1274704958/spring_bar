@@ -11,6 +11,7 @@
 class CSolidObject;
 struct S3DModel;
 struct SolidObjectDef;
+namespace Shader { struct IProgramObject; }
 
 enum UnitDrawerTypes {
 	UNIT_DRAWER_FFP  = 0, // fixed-function path
@@ -20,16 +21,23 @@ enum UnitDrawerTypes {
 	UNIT_DRAWER_CNT  = 4
 };
 
+static constexpr char* UnitDrawerNames[UnitDrawerTypes::UNIT_DRAWER_CNT] = {
+	"FFP : fixed-function path",
+	"ARB : legacy standard shader path",
+	"GLSL: legacy standard shader path",
+	"GL4 : modern standard shader path",
+};
+
 class CUnitDrawer
 {
 public:
 	CUnitDrawer() {}
-	virtual ~CUnitDrawer() {};
+	virtual ~CUnitDrawer() {}
 public:
 	template<typename T>
 	static void InitInstance(int t) {
 		if (unitDrawers[t] == nullptr)
-			unitDrawers[t] = new T();
+			unitDrawers[t] = new T{};
 	}
 	static void KillInstance(int t) {
 		spring::SafeDelete(unitDrawers[t]);
@@ -43,31 +51,33 @@ public:
 	static void SelectImplementation(bool forceReselection = false);
 	static void SelectImplementation(int targetImplementation);
 
-	static void Update();
+	static void UpdateStatic();
 
 	// Set/Get state from outside
-	static void SetDrawForwardPass(bool b) { drawForward = b; }
+	static void SetDrawForwardPass (bool b) { drawForward = b; }
 	static void SetDrawDeferredPass(bool b) { drawDeferred = b; }
-	static bool DrawForward() { return drawForward; }
+	static bool DrawForward () { return drawForward; }
 	static bool DrawDeferred() { return drawDeferred; }
 
-	static bool UseAdvShading() { return advShading; }
+	static bool  UseAdvShading   () { return advShading; }
 	static bool& UseAdvShadingRef() { reselectionRequested = true; return advShading; }
 	static bool& WireFrameModeRef() { return wireFrameMode; }
+
+	static int  PreferedDrawerType   () { return preferedDrawerType; }
+	static int& PreferedDrawerTypeRef() { reselectionRequested = true; return preferedDrawerType; }
 public:
 	// Interface with CUnitDrawerData
 	static void SunChangedStatic();
 
 	//TODO kill direct access and make interfaces instead
-	const CUnitDrawerData& UnitDrawerData() const {	return unitDrawerData; }
-	      CUnitDrawerData& UnitDrawerData()       { return unitDrawerData; }
+	static CUnitDrawerData& UnitDrawerData() { return *unitDrawerData; }
 public:
-	virtual void SunChanged() = 0;
+	virtual void SunChanged() const = 0;
 
 	// Former UnitDrawerState + new functions
 	virtual bool CanEnable() const = 0;
-	virtual bool CanDrawAlpha() const = 0;
 	virtual bool CanDrawDeferred() const = 0;
+	virtual bool CanDrawAlpha() const = 0; //only used by feature drawer (legacy)
 
 	virtual bool IsLegacy() const = 0;
 
@@ -102,7 +112,7 @@ public:
 
 	// Icons Minimap
 	virtual void DrawUnitMiniMapIcons() const = 0;
-	        void UpdateUnitDefMiniMapIcons(const UnitDef* ud) { unitDrawerData.UpdateUnitDefMiniMapIcons(ud); }
+	        void UpdateUnitDefMiniMapIcons(const UnitDef* ud) { unitDrawerData->UpdateUnitDefMiniMapIcons(ud); }
 
 	// Icons Map
 	virtual void DrawUnitIcons() const = 0;
@@ -152,24 +162,29 @@ public:
 	// Auxilary
 	static bool ObjectVisibleReflection(const float3 objPos, const float3 camPos, float maxRadius);
 public:
-	inline static std::array<CUnitDrawer*, UnitDrawerTypes::UNIT_DRAWER_CNT> unitDrawers = {};
-public:
-	inline static bool forceLegacyPath = false;
-
-	inline static bool drawForward = true;
-	inline static bool drawDeferred = false;
-
-	inline static bool cubeMapInitialized = false;
-	inline static bool advShading = true;
-	inline static bool wireFrameMode = false;
-
 	/// <summary>
 	/// .x := regular unit alpha
 	/// .y := ghosted unit alpha (out of radar)
 	/// .z := ghosted unit alpha (inside radar)
 	/// .w := AI-temp unit alpha
 	/// </summary>
-	inline static float4 alphaValues = {};
+	inline static float4 alphaValues = {}; //TODO move me to protected when UnitDrawerState is gone
+protected:
+	inline static int preferedDrawerType = UnitDrawerTypes::UNIT_DRAWER_CNT;
+	inline static bool forceLegacyPath = false;
+
+	inline static bool wireFrameMode = false;
+
+	inline static bool drawForward = true;
+	inline static bool drawDeferred = false;
+
+	inline static bool deferredAllowed = false;
+
+	inline static CUnitDrawerData* unitDrawerData;
+private:
+	inline static bool advShading = false;
+
+	inline static std::array<CUnitDrawer*, UnitDrawerTypes::UNIT_DRAWER_CNT> unitDrawers = {};
 public:
 	enum BuildStages {
 		BUILDSTAGE_WIRE = 0,
@@ -183,14 +198,13 @@ private:
 	//inline static int selectedImplementation = UnitDrawerTypes::UNIT_DRAWER_FFP;
 	inline static GL::LightHandler lightHandler;
 	inline static GL::GeometryBuffer* geomBuffer = nullptr;
-protected:
-	CUnitDrawerData unitDrawerData;
 };
 
 class CUnitDrawerLegacy : public CUnitDrawer {
 public:
+	virtual void SunChanged() const override {}
 	// caps functions
-	virtual bool IsLegacy() const { return true; };
+	virtual bool IsLegacy() const { return true; }
 	// Inherited via CUnitDrawer
 	virtual void SetupOpaqueDrawing(bool deferredPass) const override;
 	virtual void ResetOpaqueDrawing(bool deferredPass) const override;
@@ -203,6 +217,14 @@ public:
 	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) const override;
 	virtual void DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const override;
 	virtual void DrawUnitTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const override;
+	virtual void DrawIndividual(const CUnit* unit, bool noLuaCall) const override;
+	virtual void DrawIndividualNoTrans(const CUnit* unit, bool noLuaCall) const override;
+
+	virtual void DrawIndividualDefOpaque(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const override;
+	virtual void DrawIndividualDefAlpha(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const override;
+
+	virtual bool ShowUnitBuildSquare(const BuildInfo& buildInfo, const std::vector<Command>& commands) const override;
+
 
 	virtual void Draw(bool drawReflection, bool drawRefraction = false) const override;
 	virtual void DrawOpaquePass(bool deferredPass, bool drawReflection, bool drawRefraction) const override;
@@ -251,8 +273,6 @@ protected:
 	void PopIndividualOpaqueState(const S3DModel* model, int teamID, bool deferredPass) const;
 	void PopIndividualAlphaState(const S3DModel* model, int teamID, bool deferredPass) const;
 
-	virtual bool ShowUnitBuildSquare(const BuildInfo& buildInfo, const std::vector<Command>& commands) const override;
-
 	void DrawUnitMiniMapIcon(const CUnit* unit, CVertexArray* va) const;
 
 	static void DrawIcon(CUnit* unit, bool useDefaultIcon);
@@ -261,23 +281,15 @@ protected:
 
 class CUnitDrawerFFP final : public CUnitDrawerLegacy {
 public:
-	CUnitDrawerFFP() {};
-	virtual ~CUnitDrawerFFP() override {};
+	CUnitDrawerFFP() {}
+	virtual ~CUnitDrawerFFP() override {}
 public:
-	// Inherited via CUnitDrawer
-	virtual void SunChanged() override {};
-
 	// caps functions
-	virtual bool CanEnable() const { return true; };
-	virtual bool CanDrawAlpha() const { return true; };
-	virtual bool CanDrawDeferred() const { return false; };
+	virtual bool CanEnable() const override { return true; }
+	virtual bool CanDrawDeferred() const override { return false; }
+	virtual bool CanDrawAlpha() const override { return false; } //by legacy convention FFP is not alpha capable
 
 	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
-
-	virtual void DrawIndividual(const CUnit* unit, bool noLuaCall) const override;
-	virtual void DrawIndividualNoTrans(const CUnit* unit, bool noLuaCall) const override;
-	virtual void DrawIndividualDefOpaque(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const override {};
-	virtual void DrawIndividualDefAlpha (const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const override {};
 
 	virtual void Enable(bool deferredPass, bool alphaPass) const override;
 	virtual void Disable(bool deferredPass) const override;
@@ -286,6 +298,8 @@ protected:
 	virtual void EnableTextures() const override;
 	virtual void DisableTextures() const override;
 private:
+public:
+	// TODO move back to private when DrawerState is gone
 	// needed by FFP drawer-state
 	static void SetupBasicS3OTexture0();
 	static void SetupBasicS3OTexture1();
@@ -293,14 +307,88 @@ private:
 	static void CleanupBasicS3OTexture0();
 };
 
-class CUnitDrawerARB  final : public CUnitDrawerLegacy {};
-class CUnitDrawerGLSL final : public CUnitDrawerLegacy {};
+class CUnitDrawerARB final : public CUnitDrawerLegacy {
+public:
+	CUnitDrawerARB();
+	virtual ~CUnitDrawerARB() override;
+public:
+	// caps functions
+	virtual bool CanEnable() const override;
+	virtual bool CanDrawDeferred() const override { return false; };
+	virtual bool CanDrawAlpha() const override { return false; } //by legacy convention ARB is not alpha capable?
 
-class CUnitDrawerGL4  final : public CUnitDrawer {
+	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
+
+	virtual void Enable(bool deferredPass, bool alphaPass) const override;
+	virtual void Disable(bool deferredPass) const override;
+	virtual void SetNanoColor(const float4& color) const override;
+protected:
+	virtual void EnableTextures() const override;
+	virtual void DisableTextures() const override;
+private:
+	void SetActiveShader(bool shadowed, bool deferred) const {
+		// shadowed=1 --> shader 1 (deferred=0) or 3 (deferred=1)
+		// shadowed=0 --> shader 0 (deferred=0) or 2 (deferred=1)
+		assert(deferred == false);
+		modelShader = modelShaders[shadowed /* + deferred * 2*/];
+	}
+	enum ModelShaderProgram {
+		MODEL_SHADER_NOSHADOW_STANDARD = 0, ///< model shader (V+F) without self-shadowing
+		MODEL_SHADER_SHADOWED_STANDARD = 1, ///< model shader (V+F) with    self-shadowing
+		MODEL_SHADER_NOSHADOW_DEFERRED = 2, ///< deferred version of MODEL_SHADER_NOSHADOW (GLSL-only)
+		MODEL_SHADER_SHADOWED_DEFERRED = 3, ///< deferred version of MODEL_SHADER_SHADOW   (GLSL-only)
+		MODEL_SHADER_COUNT = 4,
+	};
+	std::array<Shader::IProgramObject*, MODEL_SHADER_COUNT> modelShaders;
+	mutable Shader::IProgramObject* modelShader = nullptr;
+};
+
+class CUnitDrawerGLSL final : public CUnitDrawerLegacy {
+public:
+	CUnitDrawerGLSL();
+	virtual ~CUnitDrawerGLSL() override;
+public:
+	// caps functions
+	virtual bool CanEnable() const override;
+	virtual bool CanDrawDeferred() const override;
+	virtual bool CanDrawAlpha() const override { return false; } //by legacy convention ARB is not alpha capable?
+
+	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
+
+	virtual void Enable(bool deferredPass, bool alphaPass) const override;
+	virtual void Disable(bool deferredPass) const override;
+	virtual void SetNanoColor(const float4& color) const override;
+protected:
+	virtual void EnableTextures() const override;
+	virtual void DisableTextures() const override;
+private:
+	void SetActiveShader(bool shadowed, bool deferred) const {
+		// shadowed=1 --> shader 1 (deferred=0) or 3 (deferred=1)
+		// shadowed=0 --> shader 0 (deferred=0) or 2 (deferred=1)
+		modelShader = modelShaders[shadowed + deferred * 2];
+	}
+	enum ModelShaderProgram {
+		MODEL_SHADER_NOSHADOW_STANDARD = 0, ///< model shader (V+F) without self-shadowing
+		MODEL_SHADER_SHADOWED_STANDARD = 1, ///< model shader (V+F) with    self-shadowing
+		MODEL_SHADER_NOSHADOW_DEFERRED = 2, ///< deferred version of MODEL_SHADER_NOSHADOW (GLSL-only)
+		MODEL_SHADER_SHADOWED_DEFERRED = 3, ///< deferred version of MODEL_SHADER_SHADOW   (GLSL-only)
+		MODEL_SHADER_COUNT = 4,
+	};
+	std::array<Shader::IProgramObject*, MODEL_SHADER_COUNT> modelShaders;
+	mutable Shader::IProgramObject* modelShader = nullptr;
+};
+
+class CUnitDrawerGL4 final : public CUnitDrawer {
+public:
+	virtual void SunChanged() const override {}
+
+	virtual bool IsLegacy() const override { return true; }
+
+	virtual bool CanEnable() const;
+	virtual bool CanDrawDeferred() const;
+	virtual bool CanDrawAlpha() const = 0; //only used by feature drawer (legacy)
 private:
 	bool CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall);
 };
-
-
 
 extern CUnitDrawer* unitDrawer;

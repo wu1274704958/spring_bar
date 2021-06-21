@@ -142,10 +142,8 @@ void UnitDrawerStateFFP::Enable(const CUnitDrawer* ud, bool deferredPass, bool a
 	glLightfv(GL_LIGHT1, GL_SPECULAR, sunLighting->modelSpecularColor);
 	glEnable(GL_LIGHT1);
 
-	/* uncomment me
-	CUnitDrawer::SetupBasicS3OTexture1();
-	CUnitDrawer::SetupBasicS3OTexture0();
-	*/
+	CUnitDrawerFFP::SetupBasicS3OTexture1();
+	CUnitDrawerFFP::SetupBasicS3OTexture0();
 
 	const float4 color = {1.0f, 1.0f, 1.0, mix(1.0f, ud->alphaValues.x, (1.0f * alphaPass))};
 
@@ -163,10 +161,8 @@ void UnitDrawerStateFFP::Disable(const CUnitDrawer* ud, bool) {
 	glDisable(GL_LIGHTING);
 	glDisable(GL_LIGHT1);
 
-	/* uncomment me
-	CUnitDrawer::CleanupBasicS3OTexture1();
-	CUnitDrawer::CleanupBasicS3OTexture0();
-	*/
+	CUnitDrawerFFP::CleanupBasicS3OTexture1();
+	CUnitDrawerFFP::CleanupBasicS3OTexture0();
 }
 
 
@@ -447,4 +443,3 @@ void UnitDrawerStateGLSL::SetNanoColor(const float4& color) const {
 	assert(modelShaders[MODEL_SHADER_ACTIVE]->IsBound());
 	modelShaders[MODEL_SHADER_ACTIVE]->SetUniform4fv(10, color);
 }
-
