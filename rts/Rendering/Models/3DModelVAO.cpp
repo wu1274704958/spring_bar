@@ -158,19 +158,28 @@ bool S3DModelVAO::AddToSubmissionImpl(const TObj* obj, uint32_t indexStart, uint
 bool S3DModelVAO::AddToSubmission(const S3DModel* model, const int teamID)
 {
 	assert(model);
+
 	return AddToSubmissionImpl(model, model->indxStart, model->indxCount, teamID);
 }
 
 bool S3DModelVAO::AddToSubmission(const CUnit* unit)
 {
 	assert(unit);
-	return AddToSubmission(unit->model, unit->team);
+
+	const S3DModel* model = unit->model;
+	assert(model);
+
+	return AddToSubmissionImpl(unit, model->indxStart, model->indxCount, unit->team);
 }
 
 bool S3DModelVAO::AddToSubmission(const UnitDef* unitDef, const int teamID)
 {
 	assert(unitDef);
-	return AddToSubmission(unitDef->model, teamID);
+
+	const S3DModel* model = unitDef->model;
+	assert(model);
+
+	return AddToSubmissionImpl(unitDef, model->indxStart, model->indxCount, teamID);
 }
 
 
@@ -217,6 +226,8 @@ void S3DModelVAO::Submit(const GLenum mode, const bool bindUnbind)
 
 	if (bindUnbind)
 		Unbind();
+
+	modelDataToInstance.clear();
 }
 
 template<typename TObj>
@@ -262,11 +273,19 @@ bool S3DModelVAO::SubmitImmediately(const S3DModel* model, const int teamID, con
 bool S3DModelVAO::SubmitImmediately(const CUnit* unit, const GLenum mode, const bool bindUnbind)
 {
 	assert(unit);
-	return SubmitImmediately(unit->model, unit->team, mode, bindUnbind);
+
+	const S3DModel* model = unit->model;
+	assert(model);
+
+	return SubmitImmediatelyImpl(unit, model->indxStart, model->indxCount, unit->team, mode, bindUnbind);
 }
 
 bool S3DModelVAO::SubmitImmediately(const UnitDef* unitDef, const int teamID, const GLenum mode, const bool bindUnbind)
 {
 	assert(unitDef);
-	return SubmitImmediately(unitDef->model, teamID, mode, bindUnbind);
+
+	const S3DModel* model = unitDef->model;
+	assert(model);
+
+	return SubmitImmediatelyImpl(unitDef, model->indxStart, model->indxCount, teamID, mode, bindUnbind);
 }

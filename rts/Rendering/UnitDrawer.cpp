@@ -33,6 +33,7 @@
 #include "Rendering/Textures/Bitmap.h"
 #include "Rendering/Textures/3DOTextureHandler.h"
 #include "Rendering/Textures/S3OTextureHandler.h"
+#include "Rendering/Models/3DModelVAO.h"
 
 #include "Sim/Features/Feature.h"
 #include "Sim/Misc/LosHandler.h"
@@ -51,6 +52,8 @@
 #include "System/StringUtil.h"
 #include "System/MemPoolTypes.h"
 #include "System/SpringMath.h"
+
+#include "System/Threading/ThreadPool.h"
 
 #define UNIT_SHADOW_ALPHA_MASKING
 
@@ -352,10 +355,10 @@ void CUnitDrawer::InitStatic()
 
 	unitDrawerData = new CUnitDrawerData{};
 
-	CUnitDrawer::InitInstance<CUnitDrawerFFP >(UNIT_DRAWER_FFP);
-	CUnitDrawer::InitInstance<CUnitDrawerARB >(UNIT_DRAWER_ARB);
+	CUnitDrawer::InitInstance<CUnitDrawerFFP >(UNIT_DRAWER_FFP );
+	CUnitDrawer::InitInstance<CUnitDrawerARB >(UNIT_DRAWER_ARB );
 	CUnitDrawer::InitInstance<CUnitDrawerGLSL>(UNIT_DRAWER_GLSL);
-	//CUnitDrawer::InitInstance<CUnitDrawerGL4 >(UNIT_DRAWER_GL4);
+	CUnitDrawer::InitInstance<CUnitDrawerGL4 >(UNIT_DRAWER_GL4 );
 
 	SelectImplementation();
 }
@@ -411,11 +414,11 @@ void CUnitDrawer::SelectImplementation(bool forceReselection)
 	if (preferedDrawerType >= 0 && preferedDrawerType < UnitDrawerTypes::UNIT_DRAWER_CNT) {
 		auto* ud = unitDrawers[preferedDrawerType];
 		if (qualifyDrawerFunc(ud)) {
-			LOG_L(L_INFO, "[CUnitDrawer::%s] Force-switching to %s UnitDrawer", __func__, UnitDrawerNames[preferedDrawerType]);
+			LOG_L(L_INFO, "[CUnitDrawer::%s] Force-switching to %s UnitDrawer", __func__, UnitDrawerNames[preferedDrawerType].c_str());
 			SelectImplementation(preferedDrawerType);
 			return;
 		} else {
-			LOG_L(L_ERROR, "[CUnitDrawer::%s] Couldn't force-switch to %s UnitDrawer", __func__, UnitDrawerNames[preferedDrawerType]);
+			LOG_L(L_ERROR, "[CUnitDrawer::%s] Couldn't force-switch to %s UnitDrawer", __func__, UnitDrawerNames[preferedDrawerType].c_str());
 			preferedDrawerType = UnitDrawerTypes::UNIT_DRAWER_CNT; //reset;
 		}
 	}
@@ -438,7 +441,7 @@ void CUnitDrawer::SelectImplementation(int targetImplementation)
 	assert(unitDrawer);
 	assert(unitDrawer->CanEnable());
 
-	LOG_L(L_INFO, "[CUnitDrawer::%s] Switching to %s UnitDrawer", __func__, UnitDrawerNames[targetImplementation]);
+	LOG_L(L_INFO, "[CUnitDrawer::%s] Switching to %s UnitDrawer", __func__, UnitDrawerNames[targetImplementation].c_str());
 }
 
 void CUnitDrawer::UpdateStatic()
@@ -458,6 +461,19 @@ void CUnitDrawer::SunChangedStatic()
 
 		ud->SunChanged();
 	}
+}
+
+bool CUnitDrawer::SetTeamColour(int team, const float2 alpha) const
+{
+	// need this because we can be called by no-team projectiles
+	if (!teamHandler.IsValidTeam(team))
+		return false;
+
+	// should be an assert, but projectiles (+FlyingPiece) would trigger it
+	if (shadowHandler.InShadowPass())
+		return false;
+
+	return true;
 }
 
 void CUnitDrawer::BindModelTypeTexture(int mdlType, int texType)
@@ -537,6 +553,22 @@ bool CUnitDrawer::CanDrawOpaqueUnit(
 	return (cam->InView(unit->drawMidPos, unit->GetDrawRadius()));
 }
 
+bool CUnitDrawer::ShouldDrawOpaqueUnit(const CUnit* unit, bool drawReflection, bool drawRefraction) const
+{
+	if (!CanDrawOpaqueUnit(unit, drawReflection, drawRefraction))
+		return false;
+
+	if ((unit->pos).SqDistance(camera->GetPos()) > (unit->sqRadius * unitDrawerData->unitDrawDistSqr)) {
+		farTextureHandler->Queue(unit);
+		return false;
+	}
+
+	if (LuaObjectDrawer::AddOpaqueMaterialObject(const_cast<CUnit*>(unit), LUAOBJ_UNIT))
+		return false;
+
+	return true;
+}
+
 bool CUnitDrawer::CanDrawOpaqueUnitShadow(const CUnit* unit) const
 {
 	if (unit->noDraw)
@@ -584,7 +616,7 @@ void CUnitDrawerLegacy::SetupAlphaDrawing(bool deferredPass) const
 	glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_POLYGON_BIT);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE * wireFrameMode + GL_FILL * (1 - wireFrameMode));
 
-	Enable(/*deferredPass*/ false, true);
+	Enable(/*deferredPass always false*/ false, true);
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
@@ -600,20 +632,6 @@ void CUnitDrawerLegacy::ResetAlphaDrawing(bool deferredPass) const
 	glPopAttrib();
 }
 
-
-bool CUnitDrawerLegacy::SetTeamColour(int team, const float2 alpha) const
-{
-	// need this because we can be called by no-team projectiles
-	if (!teamHandler.IsValidTeam(team))
-		return false;
-
-	// should be an assert, but projectiles (+FlyingPiece) would trigger it
-	if (shadowHandler.InShadowPass())
-		return false;
-
-	return true;
-}
-
 void CUnitDrawerLegacy::DrawUnitModel(const CUnit* unit, bool noLuaCall) const
 {
 	if (!noLuaCall && unit->luaDraw && eventHandler.DrawUnit(unit))
@@ -624,9 +642,6 @@ void CUnitDrawerLegacy::DrawUnitModel(const CUnit* unit, bool noLuaCall) const
 
 void CUnitDrawerLegacy::DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const
 {
-	//if (!CheckLegacyDrawing(unit, preList, postList, lodCall, noLuaCall))
-		//return;
-
 	const bool noNanoDraw = lodCall || !unit->beingBuilt || !unit->unitDef->showNanoFrame;
 	const bool shadowPass = shadowHandler.InShadowPass();
 
@@ -998,15 +1013,7 @@ void CUnitDrawerLegacy::DrawGhostedBuildings(int modelType) const
 
 void CUnitDrawerLegacy::DrawOpaqueUnit(CUnit* unit, bool drawReflection, bool drawRefraction) const
 {
-	if (!CanDrawOpaqueUnit(unit, drawReflection, drawRefraction))
-		return;
-
-	if ((unit->pos).SqDistance(camera->GetPos()) > (unit->sqRadius * unitDrawerData->unitDrawDistSqr)) {
-		farTextureHandler->Queue(unit);
-		return;
-	}
-
-	if (LuaObjectDrawer::AddOpaqueMaterialObject(unit, LUAOBJ_UNIT))
+	if (!ShouldDrawOpaqueUnit(unit, drawReflection, drawRefraction))
 		return;
 
 	// draw the unit with the default (non-Lua) material
@@ -1719,7 +1726,7 @@ bool CUnitDrawerLegacy::ShowUnitBuildSquare(const BuildInfo& buildInfo, const st
 
 bool CUnitDrawerFFP::SetTeamColour(int team, const float2 alpha) const
 {
-	if (!CUnitDrawerLegacy::SetTeamColour(team, alpha))
+	if (!CUnitDrawer::SetTeamColour(team, alpha))
 		return false;
 
 	// non-shader case via texture combiners
@@ -1879,8 +1886,8 @@ CUnitDrawerARB::CUnitDrawerARB()
 		return;
 
 	// if GLEW_NV_vertex_program2 is supported, transparent objects are clipped against GL_CLIP_PLANE3
-	constexpr char* vertProgNamesARB[2] = { "ARB/units3o.vp", "ARB/units3o2.vp" };
-	constexpr char* fragProgNamesARB[2] = { "ARB/units3o.fp", "ARB/units3o_shadow.fp" };
+	static const char* vertProgNamesARB[2] = { "ARB/units3o.vp", "ARB/units3o2.vp" };
+	static const char* fragProgNamesARB[2] = { "ARB/units3o.fp", "ARB/units3o_shadow.fp" };
 
 	#define sh shaderHandler
 	modelShaders[MODEL_SHADER_NOSHADOW_STANDARD] = sh->CreateProgramObject("[UnitDrawer]", "S3OShaderDefARB", true);
@@ -1911,7 +1918,7 @@ bool CUnitDrawerARB::CanEnable() const { return globalRendering->haveARB && UseA
 
 bool CUnitDrawerARB::SetTeamColour(int team, const float2 alpha) const
 {
-	if (!CUnitDrawerLegacy::SetTeamColour(team, alpha))
+	if (!CUnitDrawer::SetTeamColour(team, alpha))
 		return false;
 
 	// NOTE:
@@ -1986,7 +1993,7 @@ CUnitDrawerGLSL::CUnitDrawerGLSL()
 	#define sh shaderHandler
 
 	const GL::LightHandler* lightHandler = CUnitDrawer::GetLightHandler();
-	constexpr char* shaderNames[MODEL_SHADER_COUNT] = {
+	static const std::string shaderNames[MODEL_SHADER_COUNT] = {
 		"ModelShaderGLSL-NoShadowStandard",
 		"ModelShaderGLSL-ShadowedStandard",
 		"ModelShaderGLSL-NoShadowDeferred",
@@ -2070,7 +2077,7 @@ bool CUnitDrawerGLSL::CanDrawDeferred() const { return deferredAllowed; }
 
 bool CUnitDrawerGLSL::SetTeamColour(int team, const float2 alpha) const
 {
-	if (!CUnitDrawerLegacy::SetTeamColour(team, alpha))
+	if (!CUnitDrawer::SetTeamColour(team, alpha))
 		return false;
 
 	assert(modelShader != nullptr);
@@ -2126,18 +2133,269 @@ void CUnitDrawerGLSL::DisableTextures() const { CUnitDrawerHelper::DisableTextur
 
 
 
+CUnitDrawerGL4::CUnitDrawerGL4()
+{
+	if (!CanEnable())
+		return;
+
+	#define sh shaderHandler
+
+	const GL::LightHandler* lightHandler = CUnitDrawer::GetLightHandler();
+	static const std::string shaderNames[MODEL_SHADER_COUNT] = {
+		"ModelShaderGL4-NoShadowStandard",
+		"ModelShaderGL4-ShadowedStandard",
+		"ModelShaderGL4-NoShadowDeferred",
+		"ModelShaderGL4-ShadowedDeferred",
+	};
+
+	for (unsigned int n = MODEL_SHADER_NOSHADOW_STANDARD; n <= MODEL_SHADER_SHADOWED_DEFERRED; n++) {
+		modelShaders[n] = sh->CreateProgramObject("[UnitDrawer-GL4]", shaderNames[n], false);
+		modelShaders[n]->AttachShaderObject(sh->CreateShaderObject("GLSL/ModelVertProgGL4.glsl", "", GL_VERTEX_SHADER));
+		modelShaders[n]->AttachShaderObject(sh->CreateShaderObject("GLSL/ModelFragProgGL4.glsl", "", GL_FRAGMENT_SHADER));
+
+		modelShaders[n]->SetFlag("USE_SHADOWS", int((n & 1) == 1));
+		modelShaders[n]->SetFlag("DEFERRED_MODE", int(n >= MODEL_SHADER_NOSHADOW_DEFERRED));
+		modelShaders[n]->SetFlag("GBUFFER_NORMTEX_IDX", GL::GeometryBuffer::ATTACHMENT_NORMTEX);
+		modelShaders[n]->SetFlag("GBUFFER_DIFFTEX_IDX", GL::GeometryBuffer::ATTACHMENT_DIFFTEX);
+		modelShaders[n]->SetFlag("GBUFFER_SPECTEX_IDX", GL::GeometryBuffer::ATTACHMENT_SPECTEX);
+		modelShaders[n]->SetFlag("GBUFFER_EMITTEX_IDX", GL::GeometryBuffer::ATTACHMENT_EMITTEX);
+		modelShaders[n]->SetFlag("GBUFFER_MISCTEX_IDX", GL::GeometryBuffer::ATTACHMENT_MISCTEX);
+		modelShaders[n]->SetFlag("GBUFFER_ZVALTEX_IDX", GL::GeometryBuffer::ATTACHMENT_ZVALTEX);
+
+		modelShaders[n]->Link();
+		//modelShaders[n]->SetUniformLocation("teamColor");         // idx  9
+		//modelShaders[n]->SetUniformLocation("nanoColor");         // idx 10
+
+		modelShaders[n]->Enable();
+		//modelShaders[n]->SetUniform4f(9, 0.0f, 0.0f, 0.0f, 0.0f);
+		//modelShaders[n]->SetUniform4f(10, 0.0f, 0.0f, 0.0f, 0.0f);
+		modelShaders[n]->Disable();
+		modelShaders[n]->Validate();
+	}
+
+	// make the active shader non-NULL
+	SetActiveShader(shadowHandler.ShadowsLoaded(), false);
+
+	#undef sh
+
+}
+
+CUnitDrawerGL4::~CUnitDrawerGL4()
+{
+	modelShaders.fill(nullptr);
+	shaderHandler->ReleaseProgramObjects("[UnitDrawer-GL4]");
+}
+
 bool CUnitDrawerGL4::CanEnable() const { return globalRendering->haveGL4 && UseAdvShading(); }
 bool CUnitDrawerGL4::CanDrawDeferred() const { return deferredAllowed; }
 
-bool CUnitDrawerGL4::CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall)
+void CUnitDrawerGL4::Draw(bool drawReflection, bool drawRefraction) const
+{
+	assert((CCameraHandler::GetActiveCamera())->GetCamType() != CCamera::CAMTYPE_SHADOW);
+
+	// first do the deferred pass; conditional because
+	// most of the water renderers use their own FBO's
+	if (drawDeferred && !drawReflection && !drawRefraction)
+		LuaObjectDrawer::DrawDeferredPass(LUAOBJ_UNIT);
+
+	// now do the regular forward pass
+	if (drawForward)
+		DrawOpaquePass(false, drawReflection, drawRefraction);
+
+	farTextureHandler->Draw();
+}
+
+//TODO merge this and CUnitDrawerLegacy:: into CUnitDrawer::
+void CUnitDrawerGL4::DrawOpaquePass(bool deferredPass, bool drawReflection, bool drawRefraction) const
+{
+	SetupOpaqueDrawing(deferredPass);
+
+	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
+		if (unitDrawerData->GetOpaqueModelRenderer(modelType).GetNumObjects() == 0)
+			continue;
+
+		PushModelRenderState(modelType);
+		DrawOpaqueUnits(modelType, drawReflection, drawRefraction);
+		DrawOpaqueAIUnits(modelType);
+		PopModelRenderState(modelType);
+	}
+
+	ResetOpaqueDrawing(deferredPass);
+
+	// draw all custom'ed units that were bypassed in the loop above
+	LuaObjectDrawer::SetDrawPassGlobalLODFactor(LUAOBJ_UNIT);
+	LuaObjectDrawer::DrawOpaqueMaterialObjects(LUAOBJ_UNIT, deferredPass);
+}
+
+void CUnitDrawerGL4::DrawShadowPass() const
+{
+	//TODO Fix shadowHandler.GetShadowGenProg(CShadowHandler::SHADOWGEN_PROGRAM_MODEL);
+}
+
+void CUnitDrawerGL4::DrawAlphaPass() const
+{
+	SetupAlphaDrawing(false);
+
+	for (int modelType = MODELTYPE_3DO; modelType < MODELTYPE_CNT; modelType++) {
+		if (unitDrawerData->GetAlphaModelRenderer(modelType).GetNumObjects() == 0)
+			continue;
+
+		PushModelRenderState(modelType);
+		DrawAlphaUnits(modelType);
+		DrawAlphaAIUnits(modelType);
+		PopModelRenderState(modelType);
+	}
+
+	ResetAlphaDrawing(false);
+
+	LuaObjectDrawer::SetDrawPassGlobalLODFactor(LUAOBJ_UNIT);
+	LuaObjectDrawer::DrawAlphaMaterialObjects(LUAOBJ_UNIT, false);
+}
+
+void CUnitDrawerGL4::DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const
+{
+	const auto& mdlRenderer = unitDrawerData->GetOpaqueModelRenderer(modelType);
+	auto& smv = S3DModelVAO::GetInstance();
+	// const auto& unitBinKeys = mdlRenderer.GetObjectBinKeys();
+
+	for (unsigned int i = 0, n = mdlRenderer.GetNumObjectBins(); i < n; i++) {
+		BindModelTypeTexture(modelType, mdlRenderer.GetObjectBinKey(i));
+
+		if (!mtModelDrawer) {
+			for (const CUnit* unit : mdlRenderer.GetObjectBin(i)) {
+				//DrawOpaqueUnit(unit, drawReflection, drawRefraction);
+				if (!ShouldDrawOpaqueUnit(unit, drawReflection, drawRefraction))
+					continue;
+
+				smv.AddToSubmission(unit);
+			}
+		}
+		else {
+			const auto& bin = mdlRenderer.GetObjectBin(i);
+			static std::vector<const CUnit*> unitList;
+			unitList.resize(bin.size());
+			for_mt(0, unitList.size(), [this, &bin, drawReflection, drawRefraction](int k) {
+				const CUnit* unit = bin[k];
+				unitList[k] = ShouldDrawOpaqueUnit(unit, drawReflection, drawRefraction) ? unit : nullptr;
+				});
+
+			for (const CUnit* unit : unitList) if (unit)
+				smv.AddToSubmission(unit);
+		}
+		smv.Submit(GL_TRIANGLES, false);
+	}
+}
+
+void CUnitDrawerGL4::Enable(bool deferredPass, bool alphaPass) const
+{
+	// body of former EnableCommon();
+	CUnitDrawerHelper::EnableTexturesCommon();
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	S3DModelVAO::GetInstance().Bind();
+
+	SetActiveShader(shadowHandler.ShadowsLoaded(), deferredPass);
+	assert(modelShader != nullptr);
+	modelShader->Enable();
+
+	const int drawMode = (game->GetDrawMode() == CGame::GameDrawMode::gameReflectionDraw) ?
+		ShaderDrawingModes::LM_REFLECTION : ShaderDrawingModes::LM_PLAYER;
+
+	modelShader->SetUniform("drawMode", drawMode);
+
+	if (alphaPass)
+		modelShader->SetUniform("alphaCtrl", 0.1f, 1.0f, 0.0f, 0.0f); // test > 0.1
+	else
+		modelShader->SetUniform("alphaCtrl", 0.5f, 1.0f, 0.0f, 0.0f); // test > 0.5
+
+	// end of EnableCommon();
+}
+
+void CUnitDrawerGL4::Disable(bool deferredPass) const
+{
+	assert(modelShader != nullptr);
+
+	modelShader->Disable();
+
+	S3DModelVAO::GetInstance().Unbind();
+
+	SetActiveShader(shadowHandler.ShadowsLoaded(), deferredPass);
+
+	CUnitDrawerHelper::DisableTexturesCommon();
+}
+
+void CUnitDrawerGL4::EnableTextures() const { CUnitDrawerHelper::EnableTexturesCommon(); }
+void CUnitDrawerGL4::DisableTextures() const { CUnitDrawerHelper::DisableTexturesCommon(); }
+
+
+bool CUnitDrawerGL4::CheckLegacyDrawing(const CUnit* unit, bool noLuaCall) const
+{
+	if (unit->luaDraw || !noLuaCall)
+		return false;
+
+	return true;
+}
+
+bool CUnitDrawerGL4::CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const
 {
 	if (forceLegacyPath)
 		return false;
 
-	if (lodCall || preList != 0 || postList != 0 || unit->luaDraw || !noLuaCall) { //TODO: sanitize
+	if (lodCall || preList != 0 || postList != 0 || CheckLegacyDrawing(unit, noLuaCall)) { //TODO: sanitize
 		ForceLegacyPath();
 		return false;
 	}
+
+	return true;
+}
+
+void CUnitDrawerGL4::SetupOpaqueDrawing(bool deferredPass) const
+{
+	glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE * wireFrameMode + GL_FILL * (1 - wireFrameMode));
+
+	glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
+
+	//alpha test > 0.5
+
+	Enable(deferredPass, false);
+}
+
+void CUnitDrawerGL4::ResetOpaqueDrawing(bool deferredPass) const
+{
+	Disable(deferredPass);
+	glPopAttrib();
+}
+
+void CUnitDrawerGL4::SetupAlphaDrawing(bool deferredPass) const
+{
+	glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE * wireFrameMode + GL_FILL * (1 - wireFrameMode));
+
+	Enable(/*deferredPass always false*/ false, true);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	//alpha test > 0.1
+
+	glDepthMask(GL_FALSE);
+}
+
+void CUnitDrawerGL4::ResetAlphaDrawing(bool deferredPass) const
+{
+	Disable(/*deferredPass*/ false);
+	glPopAttrib();
+}
+
+bool CUnitDrawerGL4::SetTeamColour(int team, const float2 alpha) const
+{
+	if (!CUnitDrawer::SetTeamColour(team, alpha))
+		return false;
+
+	//todo
 
 	return true;
 }

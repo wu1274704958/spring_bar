@@ -410,12 +410,17 @@ public:
 	bool Execute(const UnsyncedAction& action) const {
 
 		int prefModelDrawer = -1;
-		sscanf((action.GetArgs()).c_str(), "%i", &prefModelDrawer);
+		int mtModelDrawer = -1;
+		sscanf((action.GetArgs()).c_str(), "%i %i", &prefModelDrawer, &mtModelDrawer);
 
 		if (prefModelDrawer == -1)
 			return false;
 
+		if (mtModelDrawer != -1)
+			CUnitDrawer::MTDrawerTypeRef() = static_cast<bool>(mtModelDrawer);
+
 		CUnitDrawer::PreferedDrawerTypeRef() = prefModelDrawer;
+
 		return true;
 	}
 };

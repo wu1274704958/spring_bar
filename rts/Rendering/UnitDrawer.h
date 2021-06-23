@@ -11,6 +11,7 @@
 class CSolidObject;
 struct S3DModel;
 struct SolidObjectDef;
+
 namespace Shader { struct IProgramObject; }
 
 enum UnitDrawerTypes {
@@ -21,7 +22,7 @@ enum UnitDrawerTypes {
 	UNIT_DRAWER_CNT  = 4
 };
 
-static constexpr char* UnitDrawerNames[UnitDrawerTypes::UNIT_DRAWER_CNT] = {
+static const std::string UnitDrawerNames[UnitDrawerTypes::UNIT_DRAWER_CNT] = {
 	"FFP : fixed-function path",
 	"ARB : legacy standard shader path",
 	"GLSL: legacy standard shader path",
@@ -65,6 +66,8 @@ public:
 
 	static int  PreferedDrawerType   () { return preferedDrawerType; }
 	static int& PreferedDrawerTypeRef() { reselectionRequested = true; return preferedDrawerType; }
+
+	static bool& MTDrawerTypeRef() { return mtModelDrawer; } //no reselectionRequested needed
 public:
 	// Interface with CUnitDrawerData
 	static void SunChangedStatic();
@@ -84,12 +87,13 @@ public:
 	// Setup Fixed State
 	virtual void SetupOpaqueDrawing(bool deferredPass) const = 0;
 	virtual void ResetOpaqueDrawing(bool deferredPass) const = 0;
+
 	virtual void SetupAlphaDrawing(bool deferredPass) const = 0;
 	virtual void ResetAlphaDrawing(bool deferredPass) const = 0;
 
 	// alpha.x := alpha-value
 	// alpha.y := alpha-pass (true or false)
-	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const = 0;
+	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const;
 
 	// DrawUnit*
 	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) const = 0;
@@ -123,6 +127,7 @@ public:
 	virtual bool ShowUnitBuildSquare(const BuildInfo& buildInfo, const std::vector<Command>& commands) const = 0;
 protected:
 	bool CanDrawOpaqueUnit(const CUnit* unit, bool drawReflection, bool drawRefraction) const;
+	bool ShouldDrawOpaqueUnit(const CUnit* unit, bool drawReflection, bool drawRefraction) const;
 	bool CanDrawOpaqueUnitShadow(const CUnit* unit) const;
 
 	virtual void DrawOpaqueUnitsShadow(int modelType) const = 0;
@@ -171,6 +176,8 @@ public:
 	inline static float4 alphaValues = {}; //TODO move me to protected when UnitDrawerState is gone
 protected:
 	inline static int preferedDrawerType = UnitDrawerTypes::UNIT_DRAWER_CNT;
+	inline static bool mtModelDrawer = true;
+
 	inline static bool forceLegacyPath = false;
 
 	inline static bool wireFrameMode = false;
@@ -193,6 +200,13 @@ public:
 		BUILDSTAGE_NONE = 3,
 		BUILDSTAGE_CNT = 4,
 	};
+	enum ModelShaderProgram {
+		MODEL_SHADER_NOSHADOW_STANDARD = 0, ///< model shader (V+F) without self-shadowing
+		MODEL_SHADER_SHADOWED_STANDARD = 1, ///< model shader (V+F) with    self-shadowing
+		MODEL_SHADER_NOSHADOW_DEFERRED = 2, ///< deferred version of MODEL_SHADER_NOSHADOW (GLSL-only)
+		MODEL_SHADER_SHADOWED_DEFERRED = 3, ///< deferred version of MODEL_SHADER_SHADOW   (GLSL-only)
+		MODEL_SHADER_COUNT = 4,
+	};
 private:
 	inline static bool reselectionRequested = true;
 	//inline static int selectedImplementation = UnitDrawerTypes::UNIT_DRAWER_FFP;
@@ -211,8 +225,6 @@ public:
 
 	virtual void SetupAlphaDrawing(bool deferredPass) const override;
 	virtual void ResetAlphaDrawing(bool deferredPass) const override;
-
-	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
 
 	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) const override;
 	virtual void DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const override;
@@ -277,6 +289,15 @@ protected:
 
 	static void DrawIcon(CUnit* unit, bool useDefaultIcon);
 	void DrawIconScreenArray(const CUnit* unit, const icon::CIconData* icon, bool useDefaultIcon, const float dist, CVertexArray* va) const;
+
+	void SetActiveShader(bool shadowed, bool deferred) const {
+		// shadowed=1 --> shader 1 (deferred=0) or 3 (deferred=1)
+		// shadowed=0 --> shader 0 (deferred=0) or 2 (deferred=1)
+		modelShader = modelShaders[shadowed + deferred * 2];
+	}
+protected:
+	std::array<Shader::IProgramObject*, MODEL_SHADER_COUNT> modelShaders = {};
+	mutable Shader::IProgramObject* modelShader = nullptr;
 };
 
 class CUnitDrawerFFP final : public CUnitDrawerLegacy {
@@ -291,10 +312,11 @@ public:
 
 	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
 
+protected:
 	virtual void Enable(bool deferredPass, bool alphaPass) const override;
 	virtual void Disable(bool deferredPass) const override;
 	virtual void SetNanoColor(const float4& color) const override;
-protected:
+
 	virtual void EnableTextures() const override;
 	virtual void DisableTextures() const override;
 private:
@@ -319,28 +341,13 @@ public:
 
 	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
 
+protected:
 	virtual void Enable(bool deferredPass, bool alphaPass) const override;
 	virtual void Disable(bool deferredPass) const override;
 	virtual void SetNanoColor(const float4& color) const override;
-protected:
+
 	virtual void EnableTextures() const override;
 	virtual void DisableTextures() const override;
-private:
-	void SetActiveShader(bool shadowed, bool deferred) const {
-		// shadowed=1 --> shader 1 (deferred=0) or 3 (deferred=1)
-		// shadowed=0 --> shader 0 (deferred=0) or 2 (deferred=1)
-		assert(deferred == false);
-		modelShader = modelShaders[shadowed /* + deferred * 2*/];
-	}
-	enum ModelShaderProgram {
-		MODEL_SHADER_NOSHADOW_STANDARD = 0, ///< model shader (V+F) without self-shadowing
-		MODEL_SHADER_SHADOWED_STANDARD = 1, ///< model shader (V+F) with    self-shadowing
-		MODEL_SHADER_NOSHADOW_DEFERRED = 2, ///< deferred version of MODEL_SHADER_NOSHADOW (GLSL-only)
-		MODEL_SHADER_SHADOWED_DEFERRED = 3, ///< deferred version of MODEL_SHADER_SHADOW   (GLSL-only)
-		MODEL_SHADER_COUNT = 4,
-	};
-	std::array<Shader::IProgramObject*, MODEL_SHADER_COUNT> modelShaders;
-	mutable Shader::IProgramObject* modelShader = nullptr;
 };
 
 class CUnitDrawerGLSL final : public CUnitDrawerLegacy {
@@ -355,40 +362,87 @@ public:
 
 	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
 
+protected:
 	virtual void Enable(bool deferredPass, bool alphaPass) const override;
 	virtual void Disable(bool deferredPass) const override;
 	virtual void SetNanoColor(const float4& color) const override;
-protected:
+
 	virtual void EnableTextures() const override;
 	virtual void DisableTextures() const override;
-private:
-	void SetActiveShader(bool shadowed, bool deferred) const {
-		// shadowed=1 --> shader 1 (deferred=0) or 3 (deferred=1)
-		// shadowed=0 --> shader 0 (deferred=0) or 2 (deferred=1)
-		modelShader = modelShaders[shadowed + deferred * 2];
-	}
-	enum ModelShaderProgram {
-		MODEL_SHADER_NOSHADOW_STANDARD = 0, ///< model shader (V+F) without self-shadowing
-		MODEL_SHADER_SHADOWED_STANDARD = 1, ///< model shader (V+F) with    self-shadowing
-		MODEL_SHADER_NOSHADOW_DEFERRED = 2, ///< deferred version of MODEL_SHADER_NOSHADOW (GLSL-only)
-		MODEL_SHADER_SHADOWED_DEFERRED = 3, ///< deferred version of MODEL_SHADER_SHADOW   (GLSL-only)
-		MODEL_SHADER_COUNT = 4,
-	};
-	std::array<Shader::IProgramObject*, MODEL_SHADER_COUNT> modelShaders;
-	mutable Shader::IProgramObject* modelShader = nullptr;
 };
 
-class CUnitDrawerGL4 final : public CUnitDrawer {
+class CUnitDrawerGL4 final : public CUnitDrawerLegacy {
+public:
+	CUnitDrawerGL4();
+	virtual ~CUnitDrawerGL4() override;
 public:
 	virtual void SunChanged() const override {}
 
-	virtual bool IsLegacy() const override { return true; }
-
+	// Former UnitDrawerState + new functions
 	virtual bool CanEnable() const;
 	virtual bool CanDrawDeferred() const;
-	virtual bool CanDrawAlpha() const = 0; //only used by feature drawer (legacy)
+	virtual bool CanDrawAlpha() const { return true; }
+
+	virtual bool IsLegacy() const override { return false; }
+
+	// Setup Fixed State
+	virtual void SetupOpaqueDrawing(bool deferredPass) const override;
+	virtual void ResetOpaqueDrawing(bool deferredPass) const override;
+
+	virtual void SetupAlphaDrawing(bool deferredPass) const override;
+	virtual void ResetAlphaDrawing(bool deferredPass) const override;
+
+	virtual bool SetTeamColour(int team, const float2 alpha = float2(1.0f, 0.0f)) const override;
+
+	// DrawUnit*
+	/* TODO figure out
+	virtual void DrawUnitModel(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawUnitModelBeingBuiltShadow(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawUnitModelBeingBuiltOpaque(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawUnitNoTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const = 0;
+	virtual void DrawUnitTrans(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const = 0;
+	virtual void DrawIndividual(const CUnit* unit, bool noLuaCall) const = 0;
+	virtual void DrawIndividualNoTrans(const CUnit* unit, bool noLuaCall) const = 0;
+	*/
+
+	// DrawIndividualDef*
+	/*
+	virtual void DrawIndividualDefOpaque(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const = 0;
+	virtual void DrawIndividualDefAlpha(const SolidObjectDef* objectDef, int teamID, bool rawState, bool toScreen = false) const = 0;
+	*/
+
+	virtual void Draw(bool drawReflection, bool drawRefraction = false) const;
+	virtual void DrawOpaquePass(bool deferredPass, bool drawReflection, bool drawRefraction) const;
+	virtual void DrawShadowPass() const;
+	virtual void DrawAlphaPass() const;
+
+protected:
+	virtual void DrawOpaqueUnitsShadow(int modelType) const override {};
+	virtual void DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const override;
+
+	virtual void DrawAlphaUnits(int modelType) const override {};
+
+	virtual void DrawOpaqueAIUnits(int modelType) const override {};
+	virtual void DrawAlphaAIUnits(int modelType) const override {};
+
+	virtual void DrawGhostedBuildings(int modelType) const override {};
+
+	virtual void Enable(bool deferredPass, bool alphaPass) const override;
+	virtual void Disable(bool deferredPass) const override;
+	virtual void SetNanoColor(const float4& color) const override {};
+
+	virtual void EnableTextures() const override;
+	virtual void DisableTextures() const override;
 private:
-	bool CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall);
+	bool CheckLegacyDrawing(const CUnit* unit, bool noLuaCall) const;
+	bool CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const;
+private:
+	enum ShaderDrawingModes {
+		MODEL_PLAYER = -1,
+		LM_PLAYER = 0,
+		LM_SHADOW = 1,
+		LM_REFLECTION = 2,
+	};
 };
 
 extern CUnitDrawer* unitDrawer;

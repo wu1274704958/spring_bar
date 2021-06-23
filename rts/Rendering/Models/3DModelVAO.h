@@ -11,7 +11,7 @@ struct S3DModel;
 struct S3DModelPiece;
 struct SInstanceData;
 
-struct CUnit;
+class CUnit;
 struct UnitDef;
 
 struct SDrawElementsIndirectCommand;

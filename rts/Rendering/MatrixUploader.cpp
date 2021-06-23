@@ -140,7 +140,7 @@ std::size_t MatrixUploader::GetElemOffset(const SolidObjectDef* def) const
 
 std::size_t MatrixUploader::GetElemOffset(const S3DModel* model) const
 {
-	return std::size_t();
+	return model->GetMatAlloc().GetOffset();
 }
 
 std::size_t MatrixUploader::GetUnitDefElemOffset(int32_t unitDefID)  const
