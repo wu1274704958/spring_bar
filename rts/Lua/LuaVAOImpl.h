@@ -13,7 +13,7 @@
 
 class VAO;
 class VBO;
-struct LuaVBOImpl;
+class LuaVBOImpl;
 
 class LuaVAOImpl {
 public:
@@ -27,9 +27,11 @@ public:
 public:
 	static bool Supported();
 public:
-	void AttachVertexBuffer(const std::shared_ptr<LuaVBOImpl>& luaVBO);
-	void AttachInstanceBuffer(const std::shared_ptr<LuaVBOImpl>& luaVBO);
-	void AttachIndexBuffer(const std::shared_ptr<LuaVBOImpl>& luaVBO);
+	using LuaVBOImplSP = std::shared_ptr<LuaVBOImpl>;
+public:
+	void AttachVertexBuffer(const LuaVBOImplSP& luaVBO);
+	void AttachInstanceBuffer(const LuaVBOImplSP& luaVBO);
+	void AttachIndexBuffer(const LuaVBOImplSP& luaVBO);
 
 	void DrawArrays(GLenum mode, sol::optional<GLsizei> vertCountOpt, sol::optional<GLint> vertexFirstOpt, sol::optional<int> instanceCountOpt, sol::optional<int> instanceFirstOpt);
 	void DrawElements(GLenum mode, sol::optional<GLsizei> indCountOpt, sol::optional<int> indElemOffsetOpt, sol::optional<int> instanceCountOpt, sol::optional<int> baseVertexOpt);
