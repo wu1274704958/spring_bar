@@ -128,7 +128,9 @@ public:
 protected:
 	bool CanDrawOpaqueUnit(const CUnit* unit, bool drawReflection, bool drawRefraction) const;
 	bool ShouldDrawOpaqueUnit(const CUnit* unit, bool drawReflection, bool drawRefraction) const;
+	bool ShouldDrawAlphaUnit(CUnit* unit) const;
 	bool CanDrawOpaqueUnitShadow(const CUnit* unit) const;
+	bool ShouldDrawOpaqueUnitShadow(CUnit* unit) const;
 
 	virtual void DrawOpaqueUnitsShadow(int modelType) const = 0;
 	virtual void DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const = 0;
@@ -417,10 +419,10 @@ public:
 	virtual void DrawAlphaPass() const;
 
 protected:
-	virtual void DrawOpaqueUnitsShadow(int modelType) const override {};
+	virtual void DrawOpaqueUnitsShadow(int modelType) const override;
 	virtual void DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const override;
 
-	virtual void DrawAlphaUnits(int modelType) const override {};
+	virtual void DrawAlphaUnits(int modelType) const override;
 
 	virtual void DrawOpaqueAIUnits(int modelType) const override {};
 	virtual void DrawAlphaAIUnits(int modelType) const override {};
@@ -434,15 +436,22 @@ protected:
 	virtual void EnableTextures() const override;
 	virtual void DisableTextures() const override;
 private:
-	bool CheckLegacyDrawing(const CUnit* unit, bool noLuaCall) const;
-	bool CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const;
-private:
 	enum ShaderDrawingModes {
 		MODEL_PLAYER = -1,
 		LM_PLAYER = 0,
 		LM_SHADOW = 1,
 		LM_REFLECTION = 2,
 	};
+private:
+	void SetColorMultiplier(float a = 1.0f) const { SetColorMultiplier(1.0f, 1.0f, 1.0f, a); };
+	void SetColorMultiplier(float r, float g, float b, float a) const;
+
+	void SetDrawingMode(ShaderDrawingModes sdm) const;
+	void SetStaticModelMatrix(const CMatrix44f& mat) const;
+
+	bool CheckLegacyDrawing(const CUnit* unit, bool noLuaCall) const;
+	bool CheckLegacyDrawing(const CUnit* unit, unsigned int preList, unsigned int postList, bool lodCall, bool noLuaCall) const;
+
 };
 
 extern CUnitDrawer* unitDrawer;

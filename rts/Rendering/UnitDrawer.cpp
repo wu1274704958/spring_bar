@@ -569,6 +569,23 @@ bool CUnitDrawer::ShouldDrawOpaqueUnit(const CUnit* unit, bool drawReflection, b
 	return true;
 }
 
+bool CUnitDrawer::ShouldDrawAlphaUnit(CUnit* unit) const
+{
+	if (!camera->InView(unit->drawMidPos, unit->GetDrawRadius()))
+		return false;
+
+	if (LuaObjectDrawer::AddAlphaMaterialObject(unit, LUAOBJ_UNIT))
+		return false;
+
+	if (unit->isIcon)
+		return false;
+
+	if (!(unit->losStatus[gu->myAllyTeam] & LOS_INLOS) && !gu->spectatingFullView)
+		return false;
+
+	return true;
+}
+
 bool CUnitDrawer::CanDrawOpaqueUnitShadow(const CUnit* unit) const
 {
 	if (unit->noDraw)
@@ -587,6 +604,17 @@ bool CUnitDrawer::CanDrawOpaqueUnitShadow(const CUnit* unit) const
 	const bool unitInView = cam->InView(unit->drawMidPos, unit->GetDrawRadius());
 
 	return (unitInLOS && unitInView);
+}
+
+bool CUnitDrawer::ShouldDrawOpaqueUnitShadow(CUnit* unit) const
+{
+	if (!CanDrawOpaqueUnitShadow(unit))
+		return false;
+
+	if (LuaObjectDrawer::AddShadowMaterialObject(unit, LUAOBJ_UNIT))
+		return false;
+
+	return true;
 }
 
 /***********************************************************************/
@@ -1023,13 +1051,8 @@ void CUnitDrawerLegacy::DrawOpaqueUnit(CUnit* unit, bool drawReflection, bool dr
 
 void CUnitDrawerLegacy::DrawOpaqueUnitShadow(CUnit* unit) const
 {
-	if (!CanDrawOpaqueUnitShadow(unit))
-		return;
-
-	if (LuaObjectDrawer::AddShadowMaterialObject(unit, LUAOBJ_UNIT))
-		return;
-
-	DrawUnitTrans(unit, 0, 0, false, false);
+	if (ShouldDrawOpaqueUnitShadow(unit))
+		DrawUnitTrans(unit, 0, 0, false, false);
 }
 
 void CUnitDrawerLegacy::DrawAlphaUnit(CUnit* unit, int modelType, bool drawGhostBuildingsPass) const
@@ -2229,7 +2252,51 @@ void CUnitDrawerGL4::DrawOpaquePass(bool deferredPass, bool drawReflection, bool
 
 void CUnitDrawerGL4::DrawShadowPass() const
 {
-	//TODO Fix shadowHandler.GetShadowGenProg(CShadowHandler::SHADOWGEN_PROGRAM_MODEL);
+	// set in the shadow shader in the different way // TODO
+	//glPolygonOffset(1.0f, 1.0f);
+	//glEnable(GL_POLYGON_OFFSET_FILL);
+
+	// set in CShadowHandler::LoadShadowGenShaders()
+	//glAlphaFunc(GL_GREATER, 0.5f);
+
+	S3DModelVAO::GetInstance().Bind();
+
+	Shader::IProgramObject* po = shadowHandler.GetShadowGenProg(CShadowHandler::SHADOWGEN_PROGRAM_MODEL_GL4);
+	assert(po);
+	assert(po->IsValid());
+	po->Enable();
+
+	// cannot do that as it operates on modelShader
+	//SetDrawingMode(ShaderDrawingModes::LM_SHADOW);
+	po->SetUniform("drawMode", static_cast<int>(ShaderDrawingModes::LM_SHADOW));
+
+	{
+		assert((CCameraHandler::GetActiveCamera())->GetCamType() == CCamera::CAMTYPE_SHADOW);
+
+		// 3DO's have clockwise-wound faces and
+		// (usually) holes, so disable backface
+		// culling for them
+		if (unitDrawerData->GetOpaqueModelRenderer(MODELTYPE_3DO).GetNumObjects() > 0) {
+			glDisable(GL_CULL_FACE);
+			DrawOpaqueUnitsShadow(MODELTYPE_3DO);
+			glEnable(GL_CULL_FACE);
+		}
+
+		for (int modelType = MODELTYPE_S3O; modelType < MODELTYPE_CNT; modelType++) {
+			if (unitDrawerData->GetOpaqueModelRenderer(modelType).GetNumObjects() == 0)
+				continue;
+
+			DrawOpaqueUnitsShadow(modelType);
+		}
+	}
+
+	po->Disable();
+
+	S3DModelVAO::GetInstance().Unbind();
+
+	LuaObjectDrawer::SetDrawPassGlobalLODFactor(LUAOBJ_UNIT);
+	LuaObjectDrawer::DrawShadowMaterialObjects(LUAOBJ_UNIT, false);
+
 }
 
 void CUnitDrawerGL4::DrawAlphaPass() const
@@ -2250,6 +2317,46 @@ void CUnitDrawerGL4::DrawAlphaPass() const
 
 	LuaObjectDrawer::SetDrawPassGlobalLODFactor(LUAOBJ_UNIT);
 	LuaObjectDrawer::DrawAlphaMaterialObjects(LUAOBJ_UNIT, false);
+}
+
+void CUnitDrawerGL4::DrawOpaqueUnitsShadow(int modelType) const
+{
+	const auto& mdlRenderer = unitDrawerData->GetOpaqueModelRenderer(modelType);
+	auto& smv = S3DModelVAO::GetInstance();
+
+	for (unsigned int i = 0, n = mdlRenderer.GetNumObjectBins(); i < n; i++) {
+		BindModelTypeTexture(modelType, mdlRenderer.GetObjectBinKey(i));
+
+		const auto& binUnits = mdlRenderer.GetObjectBin(i);
+
+		if (!mtModelDrawer) {
+			static vector<CUnit*> renderUnits;
+			renderUnits.resize(binUnits.size());
+
+			for_mt(0, binUnits.size(), [&binUnits, this](const int i) {
+				renderUnits[i] = ShouldDrawOpaqueUnitShadow(binUnits[i]) ? binUnits[i] : nullptr;
+				});
+
+			for (CUnit* unit : renderUnits) {
+				if (!unit)
+					continue;
+
+				smv.AddToSubmission(unit);
+			}
+		}
+		else {
+			for (auto* unit : binUnits) {
+				if (!ShouldDrawOpaqueUnitShadow(unit))
+					continue;
+
+				smv.AddToSubmission(unit);
+			}
+		}
+		smv.Submit(GL_TRIANGLES, false);
+
+		//shadowTexKillFuncs[modelType](nullptr);
+		CUnitDrawerHelper::unitDrawerHelpers[modelType]->UnbindShadowTex(nullptr);
+	}
 }
 
 void CUnitDrawerGL4::DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const
@@ -2286,6 +2393,133 @@ void CUnitDrawerGL4::DrawOpaqueUnits(int modelType, bool drawReflection, bool dr
 	}
 }
 
+void CUnitDrawerGL4::DrawAlphaUnits(int modelType) const
+{
+	const auto& mdlRenderer = unitDrawerData->GetAlphaModelRenderer(modelType);
+
+	auto& mvi = S3DModelVAO::GetInstance();
+
+	SetColorMultiplier(alphaValues.x);
+
+	//main cloaked alpha pass
+	for (unsigned int i = 0, n = mdlRenderer.GetNumObjectBins(); i < n; i++) {
+		BindModelTypeTexture(modelType, mdlRenderer.GetObjectBinKey(i));
+
+		const auto& binUnits = mdlRenderer.GetObjectBin(i);
+
+		if (!mtModelDrawer) {
+			for (auto* unit : binUnits) {
+				if (!ShouldDrawAlphaUnit(unit))
+					continue;
+
+				mvi.AddToSubmission(unit);
+			}
+		}
+		else {
+			static vector<CUnit*> renderUnits;
+
+			renderUnits.resize(binUnits.size());
+
+			for_mt(0, binUnits.size(), [&binUnits, this](const int i) {
+				renderUnits[i] = ShouldDrawAlphaUnit(binUnits[i]) ? binUnits[i] : nullptr;
+				});
+
+			for (CUnit* unit : renderUnits) {
+				if (!unit)
+					continue;
+
+				mvi.AddToSubmission(unit);
+			}
+		}
+
+		mvi.Submit(GL_TRIANGLES, false);
+	}
+
+	// void CGLUnitDrawer::DrawGhostedBuildings(int modelType)
+	if (gu->spectatingFullView)
+		return;
+
+	const auto& deadGhostBuildings = unitDrawerData->GetDeadGhostBuildings(gu->myAllyTeam, modelType);
+
+	// deadGhostedBuildings
+	{
+		SetColorMultiplier(0.6f, 0.6f, 0.6f, alphaValues.y);
+		SetDrawingMode(ShaderDrawingModes::MODEL_PLAYER);
+
+		int prevModelType = -1;
+		int prevTexType = -1;
+		for (const auto* dgb : deadGhostBuildings) {
+			if (!camera->InView(dgb->pos, dgb->model->GetDrawRadius()))
+				continue;
+
+			static CMatrix44f staticWorldMat;
+
+			staticWorldMat.LoadIdentity();
+			staticWorldMat.Translate(dgb->pos);
+
+			staticWorldMat.RotateY(math::DEG_TO_RAD * 90.0f);
+
+			if (prevModelType != modelType || prevTexType != dgb->model->textureType) {
+				prevModelType = modelType; prevTexType = dgb->model->textureType;
+				BindModelTypeTexture(modelType, dgb->model->textureType); //ineficient rendering, but w/e
+			}
+
+			SetStaticModelMatrix(staticWorldMat);
+			mvi.SubmitImmediately(dgb->model, dgb->team); //need to submit immediately every model because of static per-model matrix
+		}
+	}
+
+	// liveGhostedBuildings
+	{
+		const auto& liveGhostedBuildings = unitDrawerData->GetLiveGhostBuildings(gu->myAllyTeam, modelType);
+
+		int prevModelType = -1;
+		int prevTexType = -1;
+		for (const auto* lgb : liveGhostedBuildings) {
+			if (!camera->InView(lgb->pos, lgb->model->GetDrawRadius()))
+				continue;
+
+			// check for decoy models
+			const UnitDef* decoyDef = lgb->unitDef->decoyDef;
+			const S3DModel* model = nullptr;
+
+			if (decoyDef == nullptr) {
+				model = lgb->model;
+			}
+			else {
+				model = decoyDef->LoadModel();
+			}
+
+			// FIXME: needs a second pass
+			if (model->type != modelType)
+				continue;
+
+			static CMatrix44f staticWorldMat;
+
+			staticWorldMat.LoadIdentity();
+			staticWorldMat.Translate(lgb->pos);
+
+			staticWorldMat.RotateY(math::DEG_TO_RAD * 90.0f);
+
+			const unsigned short losStatus = lgb->losStatus[gu->myAllyTeam];
+
+			// ghosted enemy units
+			if (losStatus & LOS_CONTRADAR)
+				SetColorMultiplier(0.9f, 0.9f, 0.9f, alphaValues.z);
+			else
+				SetColorMultiplier(0.6f, 0.6f, 0.6f, alphaValues.y);
+
+			if (prevModelType != modelType || prevTexType != model->textureType) {
+				prevModelType = modelType; prevTexType = model->textureType;
+				BindModelTypeTexture(modelType, model->textureType); //ineficient rendering, but w/e
+			}
+
+			SetStaticModelMatrix(staticWorldMat);
+			mvi.SubmitImmediately(model, lgb->team); //need to submit immediately every model because of static per-model matrix
+		}
+	}
+}
+
 void CUnitDrawerGL4::Enable(bool deferredPass, bool alphaPass) const
 {
 	// body of former EnableCommon();
@@ -2299,10 +2533,10 @@ void CUnitDrawerGL4::Enable(bool deferredPass, bool alphaPass) const
 	assert(modelShader != nullptr);
 	modelShader->Enable();
 
-	const int drawMode = (game->GetDrawMode() == CGame::GameDrawMode::gameReflectionDraw) ?
+	const auto drawMode = (game->GetDrawMode() == CGame::GameDrawMode::gameReflectionDraw) ?
 		ShaderDrawingModes::LM_REFLECTION : ShaderDrawingModes::LM_PLAYER;
 
-	modelShader->SetUniform("drawMode", drawMode);
+	SetDrawingMode(drawMode);
 
 	if (alphaPass)
 		modelShader->SetUniform("alphaCtrl", 0.1f, 1.0f, 0.0f, 0.0f); // test > 0.1
@@ -2328,6 +2562,24 @@ void CUnitDrawerGL4::Disable(bool deferredPass) const
 void CUnitDrawerGL4::EnableTextures() const { CUnitDrawerHelper::EnableTexturesCommon(); }
 void CUnitDrawerGL4::DisableTextures() const { CUnitDrawerHelper::DisableTexturesCommon(); }
 
+
+void CUnitDrawerGL4::SetColorMultiplier(float r, float g, float b, float a) const
+{
+	assert(modelShader->IsBound());
+	modelShader->SetUniform("colorMult", r, g, b, a);
+}
+
+void CUnitDrawerGL4::SetDrawingMode(ShaderDrawingModes sdm) const
+{
+	assert(modelShader->IsBound());
+	modelShader->SetUniform("drawMode", static_cast<int>(sdm));
+}
+
+void CUnitDrawerGL4::SetStaticModelMatrix(const CMatrix44f& mat) const
+{
+	assert(modelShader->IsBound());
+	modelShader->SetUniformMatrix4x4("staticModelMatrix", false, &mat.m[0]);
+}
 
 bool CUnitDrawerGL4::CheckLegacyDrawing(const CUnit* unit, bool noLuaCall) const
 {
