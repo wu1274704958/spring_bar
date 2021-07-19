@@ -76,6 +76,7 @@ public:
 	static CUnitDrawerData& UnitDrawerData() { return *unitDrawerData; }
 public:
 	virtual void SunChanged() const = 0;
+	virtual void Update() const = 0;
 
 	// Former UnitDrawerState + new functions
 	virtual bool CanEnable() const = 0;
@@ -219,6 +220,7 @@ private:
 class CUnitDrawerLegacy : public CUnitDrawer {
 public:
 	virtual void SunChanged() const override {}
+	virtual void Update() const override { unitDrawerData->Update(); };
 	// caps functions
 	virtual bool IsLegacy() const { return true; }
 	// Inherited via CUnitDrawer
@@ -379,6 +381,7 @@ public:
 	virtual ~CUnitDrawerGL4() override;
 public:
 	virtual void SunChanged() const override {}
+	virtual void Update() const override;
 
 	// Former UnitDrawerState + new functions
 	virtual bool CanEnable() const;

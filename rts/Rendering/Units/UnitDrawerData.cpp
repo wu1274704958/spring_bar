@@ -24,8 +24,6 @@
 #include "Map/Ground.h"
 #include "Map/ReadMap.h"
 
-
-
 static FixedDynMemPool<sizeof(GhostSolidObject), MAX_UNITS / 1000, MAX_UNITS / 32> ghostMemPool;
 
 ///////////////////////////

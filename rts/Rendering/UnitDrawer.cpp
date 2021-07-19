@@ -441,13 +441,13 @@ void CUnitDrawer::SelectImplementation(int targetImplementation)
 	assert(unitDrawer);
 	assert(unitDrawer->CanEnable());
 
-	LOG_L(L_INFO, "[CUnitDrawer::%s] Switching to %s UnitDrawer", __func__, UnitDrawerNames[targetImplementation].c_str());
+	LOG_L(L_INFO, "[CUnitDrawer::%s] Switching to %s %s UnitDrawer", __func__, mtModelDrawer ? "MT" : "ST", UnitDrawerNames[targetImplementation].c_str());
 }
 
 void CUnitDrawer::UpdateStatic()
 {
 	SelectImplementation();
-	unitDrawer->unitDrawerData->Update();
+	unitDrawer->Update();
 }
 
 
@@ -2207,6 +2207,31 @@ CUnitDrawerGL4::~CUnitDrawerGL4()
 {
 	modelShaders.fill(nullptr);
 	shaderHandler->ReleaseProgramObjects("[UnitDrawer-GL4]");
+}
+
+void CUnitDrawerGL4::Update() const
+{
+	unitDrawerData->Update();
+
+	auto& unsortedUnits = unitDrawerData->GetUnsortedUnits();
+	auto matUpdateFunc = [](CUnit* unit) {
+		unit->GetTransformMatrix();
+		for (auto& lmp : unit->localModel.pieces) {
+			lmp.UpdateParentMatricesRec();
+		}
+	};
+
+	if (mtModelDrawer) {
+		for_mt(0, unsortedUnits.size(), [&unsortedUnits, &matUpdateFunc](const int i) {
+			CUnit* unit = unsortedUnits[i];
+			matUpdateFunc(unit);
+		});
+	}
+	else {
+		for (CUnit* unit : unsortedUnits) {
+			matUpdateFunc(unit);
+		}
+	}
 }
 
 bool CUnitDrawerGL4::CanEnable() const { return globalRendering->haveGL4 && UseAdvShading(); }
