@@ -141,8 +141,8 @@ void UniformConstants::UpdateParamsImpl(UniformParamsBuffer* updateBuffer)
 	updateBuffer->sunDiffuseModel = sunLighting->modelDiffuseColor;
 	updateBuffer->sunDiffuseMap = sunLighting->groundDiffuseColor;
 
-	updateBuffer->sunSpecularModel = sunLighting->modelSpecularColor;
-	updateBuffer->sunSpecularMap = sunLighting->groundSpecularColor;
+	updateBuffer->sunSpecularModel = float4{ sunLighting->modelSpecularColor, sunLighting->specularExponent };
+	updateBuffer->sunSpecularMap = float4{ sunLighting->groundSpecularColor, sunLighting->specularExponent };
 
 	updateBuffer->shadowDensity = float4{ sunLighting->groundShadowDensity, sunLighting->modelShadowDensity, 0.0, 0.0 };
 
