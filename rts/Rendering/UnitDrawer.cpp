@@ -2284,8 +2284,6 @@ void CUnitDrawerGL4::DrawShadowPass() const
 	// set in CShadowHandler::LoadShadowGenShaders()
 	//glAlphaFunc(GL_GREATER, 0.5f);
 
-	S3DModelVAO::GetInstance().Bind();
-
 	Shader::IProgramObject* po = shadowHandler.GetShadowGenProg(CShadowHandler::SHADOWGEN_PROGRAM_MODEL_GL4);
 	assert(po);
 	assert(po->IsValid());
@@ -2317,8 +2315,6 @@ void CUnitDrawerGL4::DrawShadowPass() const
 
 	po->Disable();
 
-	S3DModelVAO::GetInstance().Unbind();
-
 	LuaObjectDrawer::SetDrawPassGlobalLODFactor(LUAOBJ_UNIT);
 	LuaObjectDrawer::DrawShadowMaterialObjects(LUAOBJ_UNIT, false);
 
@@ -2348,6 +2344,7 @@ void CUnitDrawerGL4::DrawOpaqueUnitsShadow(int modelType) const
 {
 	const auto& mdlRenderer = unitDrawerData->GetOpaqueModelRenderer(modelType);
 	auto& smv = S3DModelVAO::GetInstance();
+	smv.Bind();
 
 	for (unsigned int i = 0, n = mdlRenderer.GetNumObjectBins(); i < n; i++) {
 		BindModelTypeTexture(modelType, mdlRenderer.GetObjectBinKey(i));
@@ -2382,13 +2379,15 @@ void CUnitDrawerGL4::DrawOpaqueUnitsShadow(int modelType) const
 		//shadowTexKillFuncs[modelType](nullptr);
 		CUnitDrawerHelper::unitDrawerHelpers[modelType]->UnbindShadowTex(nullptr);
 	}
+
+	smv.Unbind();
 }
 
 void CUnitDrawerGL4::DrawOpaqueUnits(int modelType, bool drawReflection, bool drawRefraction) const
 {
 	const auto& mdlRenderer = unitDrawerData->GetOpaqueModelRenderer(modelType);
 	auto& smv = S3DModelVAO::GetInstance();
-	// const auto& unitBinKeys = mdlRenderer.GetObjectBinKeys();
+	smv.Bind();
 
 	for (unsigned int i = 0, n = mdlRenderer.GetNumObjectBins(); i < n; i++) {
 		BindModelTypeTexture(modelType, mdlRenderer.GetObjectBinKey(i));
@@ -2416,13 +2415,16 @@ void CUnitDrawerGL4::DrawOpaqueUnits(int modelType, bool drawReflection, bool dr
 		}
 		smv.Submit(GL_TRIANGLES, false);
 	}
+
+	smv.Unbind();
 }
 
 void CUnitDrawerGL4::DrawAlphaUnits(int modelType) const
 {
 	const auto& mdlRenderer = unitDrawerData->GetAlphaModelRenderer(modelType);
 
-	auto& mvi = S3DModelVAO::GetInstance();
+	auto& smv = S3DModelVAO::GetInstance();
+	smv.Unbind();
 
 	SetColorMultiplier(alphaValues.x);
 
@@ -2437,7 +2439,7 @@ void CUnitDrawerGL4::DrawAlphaUnits(int modelType) const
 				if (!ShouldDrawAlphaUnit(unit))
 					continue;
 
-				mvi.AddToSubmission(unit);
+				smv.AddToSubmission(unit);
 			}
 		}
 		else {
@@ -2453,11 +2455,11 @@ void CUnitDrawerGL4::DrawAlphaUnits(int modelType) const
 				if (!unit)
 					continue;
 
-				mvi.AddToSubmission(unit);
+				smv.AddToSubmission(unit);
 			}
 		}
 
-		mvi.Submit(GL_TRIANGLES, false);
+		smv.Submit(GL_TRIANGLES, false);
 	}
 
 	// void CGLUnitDrawer::DrawGhostedBuildings(int modelType)
@@ -2490,7 +2492,7 @@ void CUnitDrawerGL4::DrawAlphaUnits(int modelType) const
 			}
 
 			SetStaticModelMatrix(staticWorldMat);
-			mvi.SubmitImmediately(dgb->model, dgb->team); //need to submit immediately every model because of static per-model matrix
+			smv.SubmitImmediately(dgb->model, dgb->team); //need to submit immediately every model because of static per-model matrix
 		}
 	}
 
@@ -2540,9 +2542,11 @@ void CUnitDrawerGL4::DrawAlphaUnits(int modelType) const
 			}
 
 			SetStaticModelMatrix(staticWorldMat);
-			mvi.SubmitImmediately(model, lgb->team); //need to submit immediately every model because of static per-model matrix
+			smv.SubmitImmediately(model, lgb->team); //need to submit immediately every model because of static per-model matrix
 		}
 	}
+
+	smv.Unbind();
 }
 
 void CUnitDrawerGL4::Enable(bool deferredPass, bool alphaPass) const
@@ -2551,8 +2555,6 @@ void CUnitDrawerGL4::Enable(bool deferredPass, bool alphaPass) const
 	CUnitDrawerHelper::EnableTexturesCommon();
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	S3DModelVAO::GetInstance().Bind();
 
 	SetActiveShader(shadowHandler.ShadowsLoaded(), deferredPass);
 	assert(modelShader != nullptr);
@@ -2576,8 +2578,6 @@ void CUnitDrawerGL4::Disable(bool deferredPass) const
 	assert(modelShader != nullptr);
 
 	modelShader->Disable();
-
-	S3DModelVAO::GetInstance().Unbind();
 
 	SetActiveShader(shadowHandler.ShadowsLoaded(), deferredPass);
 
