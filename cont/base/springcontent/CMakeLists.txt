@@ -9,6 +9,7 @@ set(FILES
 	shaders/GLSL/infoPath.lua
 	shaders/GLSL/ShadowGenVertProg.glsl
 	shaders/GLSL/ShadowGenFragProg.glsl
+	shaders/GLSL/ShadowGenVertProgGL4.glsl
 	shaders/GLSL/ShadowGenFragProgGL4.glsl
 	shaders/GLSL/TreeFragProg.glsl
 	shaders/GLSL/SMFFragProg.glsl

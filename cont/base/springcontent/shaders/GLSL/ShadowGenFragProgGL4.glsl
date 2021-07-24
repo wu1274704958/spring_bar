@@ -9,7 +9,6 @@ layout(binding = 0) uniform sampler2D tex2;
 
 in Data {
 	vec4 uvCoord;
-	vec4 teamCol;
 };
 
 bool AlphaDiscard(float a) {

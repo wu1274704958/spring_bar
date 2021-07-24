@@ -55,12 +55,16 @@ layout(std140, binding = 1) uniform UniformParamsBuffer {
 	vec4 fogColor;  //fog color
 	vec4 fogParams; //fog {start, end, 0.0, scale}
 
+	vec4 sunDir;
+
 	vec4 sunAmbientModel;
 	vec4 sunAmbientMap;
 	vec4 sunDiffuseModel;
 	vec4 sunDiffuseMap;
 	vec4 sunSpecularModel;
 	vec4 sunSpecularMap;
+
+	vec4 shadowDensity; // {ground, units, 0.0, 0.0}
 
 	vec4 windInfo; // windx, windy, windz, windStrength
 	vec2 mouseScreenPos; //x, y. Screen space.
@@ -81,29 +85,21 @@ uniform mat4 staticModelMatrix = mat4(1.0);
 out Data {
 	vec4 uvCoord;
 	vec4 teamCol;
+
+	vec4 worldPos;
+	vec3 worldNormal;
+
+	// main light vector(s)
+	vec3 worldCameraDir;
+	// shadowPosition
+	vec4 shadowVertexPos;
+	// Auxilary
+	float fogFactor;
 };
 
 mat4 mat4mix(mat4 a, mat4 b, float alpha) {
 	return (a * (1.0 - alpha) + b * alpha);
 }
-
-void TransformShadowCam(vec4 worldPos, vec3 worldNormal) {
-	vec4 lightVertexPos = shadowView * worldPos;
-	vec3 lightVertexNormal = normalize(mat3(shadowView) * worldNormal);
-
-	float NdotL = clamp(dot(lightVertexNormal, vec3(0.0, 0.0, 1.0)), 0.0, 1.0);
-
-	//use old bias formula from GetShadowPCFRandom(), but this time to write down shadow depth map values
-	const float cb = 5e-5;
-	float bias = cb * tan(acos(NdotL));
-	bias = clamp(bias, 0.0, 5.0 * cb);
-
-	lightVertexPos.xy += vec2(0.5);
-	lightVertexPos.z += bias;
-
-	gl_Position = shadowProj * lightVertexPos;
-}
-
 
 void TransformPlayerCam(vec4 worldPos) {
 	gl_Position = cameraViewProj * worldPos;
@@ -149,15 +145,26 @@ void main(void)
 	#endif
 
 
-	vec4 worldPos = worldMatrix * vec4(pos, 1.0);
-	vec3 worldNormal = normalMatrix * normal;
+	worldPos = worldMatrix * vec4(pos, 1.0);
+	worldNormal = normalMatrix * normal;
 
 	teamCol = teamColor[instData.y]; // team index
 	uvCoord = uv;
 
+	shadowVertexPos = shadowView * worldPos;
+	shadowVertexPos.xy += vec2(0.5);  //no need for shadowParams anymore
+
+	vec4 cameraPos = cameraViewInv * vec4(0, 0, 0, 1);
+	worldCameraDir = cameraPos.xyz - worldPos.xyz; //from fragment to camera, world space, not normalized(!)
+
+	#if (DEFERRED_MODE == 0)
+		float fogDist = length(worldCameraDir);
+		fogFactor = (fogParams.y - fogDist) * fogParams.w;
+		fogFactor = clamp(fogFactor, 0.0, 1.0);
+	#endif
+
 	switch(drawMode) {
-		case 1:  TransformShadowCam(worldPos, worldNormal); break; //shadow
-		case 2:  TransformPlayerReflCam(worldPos);          break; //underwater reflection
-		default: TransformPlayerCam(worldPos);              break; //player, corresponds to 0 and -1 modes
+		case  1: TransformPlayerReflCam(worldPos);	break; //underwater reflection
+		default: TransformPlayerCam(worldPos);		break; //player, corresponds to 0 and -1 modes
 	};
 }

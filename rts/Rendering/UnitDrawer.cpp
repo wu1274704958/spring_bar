@@ -2289,10 +2289,6 @@ void CUnitDrawerGL4::DrawShadowPass() const
 	assert(po->IsValid());
 	po->Enable();
 
-	// cannot do that as it operates on modelShader
-	//SetDrawingMode(ShaderDrawingModes::LM_SHADOW);
-	po->SetUniform("drawMode", static_cast<int>(ShaderDrawingModes::LM_SHADOW));
-
 	{
 		assert((CCameraHandler::GetActiveCamera())->GetCamType() == CCamera::CAMTYPE_SHADOW);
 
@@ -2471,7 +2467,7 @@ void CUnitDrawerGL4::DrawAlphaUnits(int modelType) const
 	// deadGhostedBuildings
 	{
 		SetColorMultiplier(0.6f, 0.6f, 0.6f, alphaValues.y);
-		SetDrawingMode(ShaderDrawingModes::MODEL_PLAYER);
+		SetDrawingMode(ShaderDrawingModes::STATIC_MODEL);
 
 		int prevModelType = -1;
 		int prevTexType = -1;
@@ -2561,7 +2557,7 @@ void CUnitDrawerGL4::Enable(bool deferredPass, bool alphaPass) const
 	modelShader->Enable();
 
 	const auto drawMode = (game->GetDrawMode() == CGame::GameDrawMode::gameReflectionDraw) ?
-		ShaderDrawingModes::LM_REFLECTION : ShaderDrawingModes::LM_PLAYER;
+		ShaderDrawingModes::REFLCT_MODEL : ShaderDrawingModes::NORMAL_MODEL;
 
 	SetDrawingMode(drawMode);
 

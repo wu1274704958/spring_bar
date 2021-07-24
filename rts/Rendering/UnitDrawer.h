@@ -186,7 +186,7 @@ protected:
 	inline static bool wireFrameMode = false;
 
 	inline static bool drawForward = true;
-	inline static bool drawDeferred = false;
+	inline static bool drawDeferred = true;
 
 	inline static bool deferredAllowed = false;
 
@@ -440,10 +440,9 @@ protected:
 	virtual void DisableTextures() const override;
 private:
 	enum ShaderDrawingModes {
-		MODEL_PLAYER = -1,
-		LM_PLAYER = 0,
-		LM_SHADOW = 1,
-		LM_REFLECTION = 2,
+		STATIC_MODEL = -1,
+		NORMAL_MODEL =  0,
+		REFLCT_MODEL =  1,
 	};
 private:
 	void SetColorMultiplier(float a = 1.0f) const { SetColorMultiplier(1.0f, 1.0f, 1.0f, a); };
