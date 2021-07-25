@@ -138,6 +138,8 @@ namespace GL {
 		//FixedPipelineState& Multisampling(bool b) { return CommonBinaryState(GL_MULTISAMPLE, b); }
 		/// TODO
 
+		FixedPipelineState& ClipDistance(GLenum relClipSp, bool b) { return CommonBinaryState(GL_CLIP_DISTANCE0 + relClipSp, b); }
+
 		FixedPipelineState& ScissorTest(bool b) { return CommonBinaryState(GL_SCISSOR_TEST, b); }
 		FixedPipelineState& ScissorRect(GLint x, GLint y, GLint w, GLint h) { return CommonNamedState(__func__, glScissor, x, y, w, h); }
 

@@ -90,6 +90,11 @@ FixedPipelineState& GL::FixedPipelineState::InferState()
 		);
 	}
 	{
+		auto maxClipDists = glGetIntT(GL_MAX_CLIP_DISTANCES);
+		for (int i = 0; i < maxClipDists; ++i)
+			ClipDistance(i, glIsEnabled(GL_CLIP_DISTANCE0 + i));
+	}
+	{
 		auto viewPort = glGetIntT<std::array<int32_t, 4>>(GL_VIEWPORT);
 		Viewport(viewPort[0], viewPort[1], viewPort[2], viewPort[3]);
 	}
