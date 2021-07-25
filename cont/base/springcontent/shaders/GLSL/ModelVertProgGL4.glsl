@@ -27,6 +27,10 @@ layout(std140, binding = 0) uniform UniformMatrixBuffer {
 	mat4 shadowProj;
 	mat4 shadowViewProj;
 
+	mat4 reflectionView;
+	mat4 reflectionProj;
+	mat4 reflectionViewProj;
+
 	mat4 orthoProj01;
 
 	// transforms for [0] := Draw, [1] := DrawInMiniMap, [2] := Lua DrawInMiniMap
@@ -81,6 +85,7 @@ layout(std140, binding=0) readonly buffer MatrixBuffer {
 
 uniform int drawMode = 0;
 uniform mat4 staticModelMatrix = mat4(1.0);
+uniform vec4 waterClipPlane = vec4(0.0, 0.0, 0.0, 1.0);
 
 out Data {
 	vec4 uvCoord;
@@ -105,9 +110,8 @@ void TransformPlayerCam(vec4 worldPos) {
 	gl_Position = cameraViewProj * worldPos;
 }
 
-//TODO figure out?
 void TransformPlayerReflCam(vec4 worldPos) {
-	gl_Position = cameraViewProj * worldPos;
+	gl_Position = reflectionViewProj * worldPos;
 }
 
 void TransformPlayerCamStaticMat(vec4 worldPos) {
@@ -147,6 +151,8 @@ void main(void)
 
 	worldPos = worldMatrix * vec4(pos, 1.0);
 	worldNormal = normalMatrix * normal;
+	
+	gl_ClipDistance[2] = dot(worldPos, waterClipPlane);
 
 	teamCol = teamColor[instData.y]; // team index
 	uvCoord = uv;
@@ -163,8 +169,16 @@ void main(void)
 		fogFactor = clamp(fogFactor, 0.0, 1.0);
 	#endif
 
+
 	switch(drawMode) {
-		case  1: TransformPlayerReflCam(worldPos);	break; //underwater reflection
-		default: TransformPlayerCam(worldPos);		break; //player, corresponds to 0 and -1 modes
+		case  1: // water reflection
+			TransformPlayerReflCam(worldPos);
+			break;
+		case  2: // water refraction
+			TransformPlayerCam(worldPos);
+			break;
+		default: // player, (-1) static model, (0) normal rendering
+			TransformPlayerCam(worldPos);			
+			break;
 	};
 }

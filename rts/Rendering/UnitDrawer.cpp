@@ -2556,10 +2556,18 @@ void CUnitDrawerGL4::Enable(bool deferredPass, bool alphaPass) const
 	assert(modelShader != nullptr);
 	modelShader->Enable();
 
-	const auto drawMode = (game->GetDrawMode() == CGame::GameDrawMode::gameReflectionDraw) ?
-		ShaderDrawingModes::REFLCT_MODEL : ShaderDrawingModes::NORMAL_MODEL;
-
-	SetDrawingMode(drawMode);
+	switch (game->GetDrawMode())
+	{
+		case CGame::GameDrawMode::gameReflectionDraw: {
+			glEnable(GL_CLIP_DISTANCE2);
+			SetDrawingMode(ShaderDrawingModes::REFLCT_MODEL);
+		} break;
+		case CGame::GameDrawMode::gameRefractionDraw: {
+			glEnable(GL_CLIP_DISTANCE2);
+			SetDrawingMode(ShaderDrawingModes::REFRAC_MODEL);
+		} break;
+		default: SetDrawingMode(ShaderDrawingModes::NORMAL_MODEL); break;
+	}
 
 	if (alphaPass)
 		modelShader->SetUniform("alphaCtrl", 0.1f, 1.0f, 0.0f, 0.0f); // test > 0.1
@@ -2576,6 +2584,17 @@ void CUnitDrawerGL4::Disable(bool deferredPass) const
 	modelShader->Disable();
 
 	SetActiveShader(shadowHandler.ShadowsLoaded(), deferredPass);
+
+	switch (game->GetDrawMode())
+	{
+	case CGame::GameDrawMode::gameReflectionDraw: {
+		glDisable(GL_CLIP_DISTANCE2);
+	} break;
+	case CGame::GameDrawMode::gameRefractionDraw: {
+		glDisable(GL_CLIP_DISTANCE2);
+	} break;
+	default: {} break;
+	}
 
 	CUnitDrawerHelper::DisableTexturesCommon();
 }
@@ -2594,6 +2613,19 @@ void CUnitDrawerGL4::SetDrawingMode(ShaderDrawingModes sdm) const
 {
 	assert(modelShader->IsBound());
 	modelShader->SetUniform("drawMode", static_cast<int>(sdm));
+
+	switch (sdm)
+	{
+		case CUnitDrawerGL4::REFLCT_MODEL:
+			modelShader->SetUniform("waterClipPlane", 0.0f,  1.0f, 0.0f, 0.0f);
+			break;
+		case CUnitDrawerGL4::REFRAC_MODEL:
+			modelShader->SetUniform("waterClipPlane", 0.0f, -1.0f, 0.0f, 0.0f);
+			break;
+		default:
+			modelShader->SetUniform("waterClipPlane", 0.0f, 0.0f, 0.0f, 1.0f);
+			break;
+	}
 }
 
 void CUnitDrawerGL4::SetStaticModelMatrix(const CMatrix44f& mat) const

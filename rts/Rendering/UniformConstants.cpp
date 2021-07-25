@@ -7,6 +7,7 @@
 #include "Rendering/ShadowHandler.h"
 #include "Rendering/Env/ISky.h"
 #include "Rendering/Env/SunLighting.h"
+#include "Rendering/Env/IWater.h"
 #include "Game/Camera.h"
 #include "Game/CameraHandler.h"
 #include "Game/GlobalUnsynced.h"
@@ -22,6 +23,7 @@
 #include "Map/ReadMap.h"
 #include "System/Log/ILog.h"
 #include "System/SafeUtil.h"
+#include "System/Config/ConfigHandler.h"
 #include "SDL2/SDL_mouse.h"
 
 void UniformConstants::InitVBO(VBO*& vbo, const int vboSingleSize)
@@ -96,6 +98,24 @@ void UniformConstants::UpdateMatricesImpl(UniformMatricesBuffer* updateBuffer)
 	updateBuffer->shadowView = shadowHandler.GetShadowViewMatrix(CShadowHandler::SHADOWMAT_TYPE_DRAWING);
 	updateBuffer->shadowProj = shadowHandler.GetShadowProjMatrix(CShadowHandler::SHADOWMAT_TYPE_DRAWING);
 	updateBuffer->shadowViewProj = updateBuffer->shadowProj * updateBuffer->shadowView;
+
+	{
+		CCamera* prvCam = CCameraHandler::GetSetActiveCamera(CCamera::CAMTYPE_UWREFL);
+
+		CCamera* reflCam = CCameraHandler::GetActiveCamera();
+		reflCam->CopyStateReflect(prvCam);
+
+		const int reflTexSize = (water->GetID() == IWater::WATER_RENDERER_BUMPMAPPED) ?
+			next_power_of_2(configHandler->GetInt("BumpWaterTexSizeReflection")) : 512;
+
+		reflCam->UpdateLoadViewPort(0, 0, reflTexSize, reflTexSize);
+
+		updateBuffer->reflectionView = reflCam->GetViewMatrix();
+		updateBuffer->reflectionProj = reflCam->GetProjectionMatrix();
+		updateBuffer->reflectionViewProj = reflCam->GetViewProjectionMatrix();
+
+		CCameraHandler::SetActiveCamera(prvCam->GetCamType());
+	}
 
 	updateBuffer->orthoProj01 = CMatrix44f::ClipOrthoProj01();
 

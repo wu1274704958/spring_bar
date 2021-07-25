@@ -443,6 +443,7 @@ private:
 		STATIC_MODEL = -1,
 		NORMAL_MODEL =  0,
 		REFLCT_MODEL =  1,
+		REFRAC_MODEL =  2,
 	};
 private:
 	void SetColorMultiplier(float a = 1.0f) const { SetColorMultiplier(1.0f, 1.0f, 1.0f, a); };
