@@ -90,6 +90,21 @@ FixedPipelineState& GL::FixedPipelineState::InferState()
 		);
 	}
 	{
+		Multisampling(glIsEnabled(GL_MULTISAMPLE));
+		Multisampling(glIsEnabled(GL_SAMPLE_ALPHA_TO_COVERAGE));
+		Multisampling(glIsEnabled(GL_SAMPLE_ALPHA_TO_ONE));
+	}
+	{
+		PrimitiveRestart(glIsEnabled(GL_PRIMITIVE_RESTART));
+		PrimitiveRestartIndex(glGetIntT<GLuint>(GL_PRIMITIVE_RESTART_INDEX));
+	}
+	{
+		CubemapSeamless(glIsEnabled(GL_TEXTURE_CUBE_MAP_SEAMLESS));
+	}
+	{
+		PointSize(glIsEnabled(GL_PROGRAM_POINT_SIZE));
+	}
+	{
 		auto maxClipDists = glGetIntT(GL_MAX_CLIP_DISTANCES);
 		for (int i = 0; i < maxClipDists; ++i)
 			ClipDistance(i, glIsEnabled(GL_CLIP_DISTANCE0 + i));

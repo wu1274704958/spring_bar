@@ -135,8 +135,16 @@ namespace GL {
 
 		FixedPipelineState& ColorMask(bool r, bool g, bool b, bool a) { return CommonNamedState(__func__, glColorMask, r, g, b, a); }
 
-		//FixedPipelineState& Multisampling(bool b) { return CommonBinaryState(GL_MULTISAMPLE, b); }
-		/// TODO
+		FixedPipelineState& Multisampling(bool b) { return CommonBinaryState(GL_MULTISAMPLE, b); }
+		FixedPipelineState& AlphaToCoverage(bool b) { return CommonBinaryState(GL_SAMPLE_ALPHA_TO_COVERAGE, b); }
+		FixedPipelineState& AlphaToOne(bool b) { return CommonBinaryState(GL_SAMPLE_ALPHA_TO_ONE, b); }
+
+		FixedPipelineState& PrimitiveRestart(bool b) { return CommonBinaryState(GL_PRIMITIVE_RESTART, b); }
+		FixedPipelineState& PrimitiveRestartIndex(GLuint index) { return CommonNamedState(__func__, glPrimitiveRestartIndex, index); }
+
+		FixedPipelineState& CubemapSeamless(bool b) { return CommonBinaryState(GL_TEXTURE_CUBE_MAP_SEAMLESS, b); }
+
+		FixedPipelineState& PointSize(bool b) { return CommonBinaryState(GL_PROGRAM_POINT_SIZE, b); }
 
 		FixedPipelineState& ClipDistance(GLenum relClipSp, bool b) { return CommonBinaryState(GL_CLIP_DISTANCE0 + relClipSp, b); }
 
