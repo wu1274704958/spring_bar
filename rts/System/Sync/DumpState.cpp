@@ -16,6 +16,8 @@
 #include "Sim/Features/FeatureHandler.h"
 #include "Sim/Misc/GlobalSynced.h"
 #include "Sim/Misc/TeamHandler.h"
+#include "Sim/Misc/LosHandler.h"
+#include "Sim/Misc/SmoothHeightMesh.h"
 #include "Sim/MoveTypes/MoveType.h"
 #include "Sim/Projectiles/Projectile.h"
 #include "Sim/Projectiles/ProjectileHandler.h"
@@ -25,6 +27,7 @@
 #include "Sim/Units/UnitHandler.h"
 #include "Sim/Weapons/Weapon.h"
 #include "Sim/Weapons/WeaponDefHandler.h"
+#include "Map/ReadMap.h"
 #include "System/StringUtil.h"
 #include "System/Log/ILog.h"
 
@@ -37,7 +40,7 @@ static int gFramePeriod =  1;
 
 void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 {
-	#ifdef NDEBUG
+	#if defined(NDEBUG) || 1 //questionable value
 	// must be in debug-mode for this
 	return;
 	#endif
@@ -57,6 +60,7 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 	if (newFramePeriod >= 1) gFramePeriod = newFramePeriod;
 
 	if ((gMinFrameNum != oldMinFrameNum) || (gMaxFrameNum != oldMaxFrameNum)) {
+		LOG("[%s] dumping state (from %d to %d step %d)", __func__, gMinFrameNum, gMaxFrameNum, gFramePeriod);
 		// bounds changed, open a new file
 		if (file.is_open()) {
 			file.flush();
@@ -112,7 +116,9 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 	#define DUMP_FEATURE_DATA
 	#define DUMP_PROJECTILE_DATA
 	#define DUMP_TEAM_DATA
-	// #define DUMP_ALLYTEAM_DATA
+	#define DUMP_ALLYTEAM_DATA
+	#define DUMP_HEIGHTMAP
+	#define DUMP_SMOOTHMESH
 
 	#ifdef DUMP_UNIT_DATA
 	for (const CUnit* u: activeUnits) {
@@ -249,18 +255,73 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 
 	#ifdef DUMP_ALLYTEAM_DATA
 	for (int a = 0; a < teamHandler.ActiveAllyTeams(); ++a) {
-		file << "\t\tallyteamID: " << a << ", LOS-map:" << "\n";
+		file << "\t\tallyteamID: " << a << "\n";
 
-		for (int y = 0; y < losHandler->losSizeY; ++y) {
-			file << " ";
+		std::array<ILosType*, 7> losTypes = {
+			&losHandler->los,
+			&losHandler->airLos,
+			&losHandler->radar,
+			&losHandler->sonar,
+			&losHandler->seismic,
+			&losHandler->jammer,
+			&losHandler->sonarJammer
+		};
 
-			for (int x = 0; x < losHandler->losSizeX; ++x) {
-				file << "\t\t\t" << losHandler->losMaps[a][y * losHandler->losSizeX + x] << " ";
+		for (int lti = 0; lti < losTypes.size(); ++lti) {
+			file << "\t\t\tLOS-map type:" << lti << "\n";
+			const auto lt = losTypes[lti];
+			const auto* lm = &lt->losMaps[a].front();
+			file << "\t\t\t\t";
+			for (unsigned int i = 0; i < (lt->size.x * lt->size.y); i++) {
+				file << lm[i] << " ";
 			}
-
 			file << "\n";
 		}
 	}
+	#endif
+
+	#ifdef DUMP_HEIGHTMAP
+	const auto heightmap = readMap->GetCornerHeightMapSynced();
+	file << "\theightmap as uint32t: " << "\n";
+	file << "\t\t";
+	for (unsigned int i = 0; i < (mapDims.mapxp1 * mapDims.mapyp1); i++) {
+		file << *reinterpret_cast<const uint32_t*>(&heightmap[i]) << " ";
+	}
+	file << "\n";
+
+	const auto faceNormals = readMap->GetFaceNormalsSynced();
+	file << "\tfaceNormals as uint32t: " << "\n";
+	file << "\t\t";
+	for (unsigned int i = 0; i < (mapDims.mapx * mapDims.mapy); i++) {
+		file << *reinterpret_cast<const uint32_t*>(&faceNormals[i + 0].x) << " ";
+		file << *reinterpret_cast<const uint32_t*>(&faceNormals[i + 0].y) << " ";
+		file << *reinterpret_cast<const uint32_t*>(&faceNormals[i + 0].z) << " ";
+
+		file << *reinterpret_cast<const uint32_t*>(&faceNormals[i + 1].x) << " ";
+		file << *reinterpret_cast<const uint32_t*>(&faceNormals[i + 1].y) << " ";
+		file << *reinterpret_cast<const uint32_t*>(&faceNormals[i + 1].z) << " ";
+	}
+	file << "\n";
+
+	const auto centerNormals = readMap->GetCenterNormalsSynced();
+	file << "\centerNormals as uint32t: " << "\n";
+	file << "\t\t";
+	for (unsigned int i = 0; i < (mapDims.mapx * mapDims.mapy); i++) {
+		file << *reinterpret_cast<const uint32_t*>(&centerNormals[i].x) << " ";
+		file << *reinterpret_cast<const uint32_t*>(&centerNormals[i].y) << " ";
+		file << *reinterpret_cast<const uint32_t*>(&centerNormals[i].z) << " ";
+	}
+	file << "\n";
+	#endif
+
+	#ifdef DUMP_SMOOTHMESH
+	const auto smoothMesh = smoothGround.GetMeshData();
+	file << "\smoothMesh as uint32t: " << "\n";
+	file << "\t\t";
+	for (unsigned int i = 0; i < (smoothGround.GetMaxX() * smoothGround.GetMaxY()); i++) {
+		file << *reinterpret_cast<const uint32_t*>(&smoothMesh[i]) << " ";
+	}
+	file << "\n";
 	#endif
 
 	file.flush();

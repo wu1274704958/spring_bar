@@ -5,7 +5,7 @@
 
 #ifdef SYNCCHECK
 
-#ifdef TRACE_SYNC_HEAVY
+#ifdef SYNC_HSIEH
 	#include "HsiehHash.h"
 #endif
 
@@ -32,11 +32,10 @@ class CSyncChecker {
 		 */
 		static unsigned GetChecksum() { return g_checksum; }
 		static void NewFrame() { g_checksum = 0xfade1eaf; }
-
-		static void Sync(const void* p, unsigned size) {
+				static void Sync(const void* p, unsigned size) {
 			// most common cases first, make it easy for compiler to optimize for it
 			// simple xor is not enough to detect multiple zeroes, e.g.
-#ifdef TRACE_SYNC_HEAVY
+#ifdef SYNC_HSIEH
 			g_checksum = HsiehHash((const char*)p, size, g_checksum);
 #else
 			switch(size) {
