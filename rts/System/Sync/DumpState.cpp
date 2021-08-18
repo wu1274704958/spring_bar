@@ -41,7 +41,7 @@ static int gFramePeriod =  1;
 
 void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 {
-	#if defined(NDEBUG) || 1 //questionable value
+	#if defined(NDEBUG) && 0 //questionable value
 	// must be in debug-mode for this
 	return;
 	#endif
