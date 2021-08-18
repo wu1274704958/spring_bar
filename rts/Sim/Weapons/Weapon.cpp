@@ -992,6 +992,18 @@ bool CWeapon::TryTargetRotate(const CUnit* unit, bool userTarget, bool manualFir
 	SWeaponTarget trg(unit, userTarget);
 	trg.isManualFire = manualFire;
 
+	if (gs->frameNum == 9678) {
+		LOG("CWeapon::TryTargetRotate(9678) Owner:[%s] Target:[%s] tempTargetPos(%u, %u, %u) mainDir(%u, %u, %u) aimFromPos(%u, %u, %u) weaponHeading(%d) enemyHeading(%d)", \
+			this->owner->unitDef->name.c_str(), \
+			unit->unitDef->name.c_str(), \
+			*reinterpret_cast<const uint32_t*>(&tempTargetPos.x), *reinterpret_cast<const uint32_t*>(&tempTargetPos.y), *reinterpret_cast<const uint32_t*>(&tempTargetPos.z), \
+			*reinterpret_cast<const uint32_t*>(&mainDir.x), *reinterpret_cast<const uint32_t*>(&mainDir.y), *reinterpret_cast<const uint32_t*>(&mainDir.z), \
+			*reinterpret_cast<const uint32_t*>(&aimFromPos.x), *reinterpret_cast<const uint32_t*>(&aimFromPos.y), *reinterpret_cast<const uint32_t*>(&aimFromPos.z), \
+			weaponHeading, \
+			enemyHeading \
+		);
+	}
+
 	return TryTargetHeading(enemyHeading - weaponHeading, trg);
 }
 
