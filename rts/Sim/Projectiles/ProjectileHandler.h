@@ -67,6 +67,8 @@ public:
 
 	int GetCurrentParticles() const;
 
+	const std::vector<int>& GetFreeProjectileIDs(bool synced = true) const { return freeProjectileIDs[synced]; };
+
 	void AddProjectile(CProjectile* p);
 	void AddGroundFlash(CGroundFlash* flash) { groundFlashes.push_back(flash); }
 	void AddFlyingPiece(

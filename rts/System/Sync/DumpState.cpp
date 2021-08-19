@@ -117,6 +117,7 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 	#define DUMP_UNIT_MOVETYPE_DATA
 	#define DUMP_FEATURE_DATA
 	#define DUMP_PROJECTILE_DATA
+	#define DUMP_PROJECTILE_FREE
 	#define DUMP_TEAM_DATA
 	//#define DUMP_ALLYTEAM_DATA
 	#define DUMP_ALLYTEAM_DATA_CHECKSUM
@@ -244,7 +245,7 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 		file << "\t\t\tcheckCol: " << p->checkCol << ", deleteMe: " << p->deleteMe << "\n";
 		if (w) {
 			const auto* wto = w->GetTargetObject();
-			file << "\t\t\ttargetObject: <" << wto << "\n";
+			file << "\t\t\ttargetObject: <" << (wto ? "valid" : "nullptr") << ">\n";
 			if (wto) {
 				file << "\t\t\t\t TO_id: " << wto->id << "\n";
 				file << "\t\t\t\t TO_pos: <" << wto->pos.x << ", " << wto->pos.y << ", " << wto->pos.z << ">\n";
@@ -255,6 +256,15 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 			file << "\t\t\tweaponDef: " << wd->name << " id: " << wd->id << "\n";
 		}
 	}
+	#endif
+
+	#ifdef DUMP_PROJECTILE_FREE
+	file << "\t\tfreeProjectileIDs.size(): " << projectileHandler.GetFreeProjectileIDs(true).size() << "\n";
+	file << "\t\tfreeProjectileIDs: " << projectileHandler.GetFreeProjectileIDs(true).size();
+	for (int id : projectileHandler.GetFreeProjectileIDs(true)) {
+		file << id << " ";
+	}
+	file << "\n";
 	#endif
 
 	file << "\tteams: " << teamHandler.ActiveTeams() << "\n";
