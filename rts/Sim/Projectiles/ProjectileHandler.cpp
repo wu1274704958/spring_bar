@@ -406,8 +406,15 @@ void CProjectileHandler::AddProjectile(CProjectile* p)
 		#else
 		{
 			// randomly shuffled, randomly indexed
+
 			const unsigned int idx = rngFunc(freeIDs.size());
 			const          int pid = (p->id = freeIDs[idx]);
+
+			if (gs->frameNum == 9625) {
+				LOG("CProjectileHandler::AddProjectile(9625) freeIDs.size(%u) idx(%u) pid(%d)", \
+					static_cast<uint32_t>(freeIDs.size()), idx, pid \
+				);
+			}
 
 			projMap[pid] = p;
 			freeIDs[idx] = freeIDs.back();

@@ -127,6 +127,16 @@ void CCannon::FireImpl(const bool scriptCall)
 	params.ttl = ttl;
 	params.gravity = gravity;
 
+	if (gs->frameNum == 9625) {
+		LOG("CCannon::FireImpl(9625) pos(%f %f %f), end(%f %f %f), speed(%f %f %f) ttl(%d) gravity(%f)", \
+			params.pos.x, params.pos.y, params.pos.z, \
+			params.end.x, params.end.y, params.end.z, \
+			params.speed.x, params.speed.y, params.speed.z, \
+			params.ttl, \
+			params.gravity
+		);
+	}
+
 	WeaponProjectileFactory::LoadProjectile(params);
 }
 
