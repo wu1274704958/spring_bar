@@ -21,6 +21,7 @@
 #include "Sim/MoveTypes/MoveType.h"
 #include "Sim/Projectiles/Projectile.h"
 #include "Sim/Projectiles/ProjectileHandler.h"
+#include "Sim/Projectiles/WeaponProjectiles/WeaponProjectile.h"
 #include "Sim/Units/CommandAI/CommandAI.h"
 #include "Sim/Units/Unit.h"
 #include "Sim/Units/UnitDef.h"
@@ -106,7 +107,7 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 	const auto& activeFeatureIDs = featureHandler.GetActiveFeatureIDs();
 	const ProjectileContainer& projectiles = projectileHandler.projectileContainers[true];
 
-	file << "frame: " << gs->frameNum << ", seed: " << gsRNG.GetLastSeed() << "\n";
+	file << "frame: " << gs->frameNum << ", seed: " << gsRNG.GetLastSeed() << ", state: " << gsRNG.GetGenState() << "\n";
 	file << "\tunits: " << activeUnits.size() << "\n";
 
 	#define DUMP_UNIT_DATA
@@ -232,12 +233,27 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 
 	#ifdef DUMP_PROJECTILE_DATA
 	for (const CProjectile* p: projectiles) {
+		const CWeaponProjectile* w = p->weapon ? static_cast<const CWeaponProjectile*>(p) : nullptr;
+		const WeaponDef* wd = w ? w->GetWeaponDef() : nullptr;
+
 		file << "\t\tprojectileID: " << p->id << "\n";
 		file << "\t\t\tpos: <" << p->pos.x << ", " << p->pos.y << ", " << p->pos.z << ">\n";
 		file << "\t\t\tdir: <" << p->dir.x << ", " << p->dir.y << ", " << p->dir.z << ">\n";
 		file << "\t\t\tspeed: <" << p->speed.x << ", " << p->speed.y << ", " << p->speed.z << ">\n";
 		file << "\t\t\tweapon: " << p->weapon << ", piece: " << p->piece << "\n";
 		file << "\t\t\tcheckCol: " << p->checkCol << ", deleteMe: " << p->deleteMe << "\n";
+		if (w) {
+			const auto* wto = w->GetTargetObject();
+			file << "\t\t\ttargetObject: <" << wto << "\n";
+			if (wto) {
+				file << "\t\t\t\t TO_id: " << wto->id << "\n";
+				file << "\t\t\t\t TO_pos: <" << wto->pos.x << ", " << wto->pos.y << ", " << wto->pos.z << ">\n";
+				file << "\t\t\t\t TO_speed: <" << wto->speed.x << ", " << wto->speed.y << ", " << wto->speed.z << wto->speed.w << ">\n";
+			}
+		}
+		if (wd) {
+			file << "\t\t\tweaponDef: " << wd->name << " id: " << wd->id << "\n";
+		}
 	}
 	#endif
 
