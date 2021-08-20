@@ -123,14 +123,14 @@ public:
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		rng_res_type res = opBracketImpl();
-		GlobalRNGLog::MyCondLog(__func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
+		GlobalRNGLog::MyCondLog(synced, __func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
 		return res;
 	}
 	rng_res_type operator()(rng_res_type N) {
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		rng_res_type res = opBracketImpl(N);
-		GlobalRNGLog::MyCondLog(__func__, N,  res, oldVal, oldSeq, gen.state(), gen.sequence());
+		GlobalRNGLog::MyCondLog(synced, __func__, N,  res, oldVal, oldSeq, gen.state(), gen.sequence());
 		return res;
 	}
 
@@ -143,7 +143,7 @@ public:
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		rng_res_type res = NextIntImpl(N);
-		GlobalRNGLog::MyCondLog(__func__, N, res, oldVal, oldSeq, gen.state(), gen.sequence());
+		GlobalRNGLog::MyCondLog(synced, __func__, N, res, oldVal, oldSeq, gen.state(), gen.sequence());
 		return res;
 	}
 
@@ -151,21 +151,21 @@ public:
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		float res = NextFloatImpl();
-		GlobalRNGLog::MyCondLog(__func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
+		GlobalRNGLog::MyCondLog(synced, __func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
 		return res;
 	}
 	float NextFloat01(rng_res_type N) {
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		float res = NextFloat01Impl(N);
-		GlobalRNGLog::MyCondLog(__func__, N, res, oldVal, oldSeq, gen.state(), gen.sequence());
+		GlobalRNGLog::MyCondLog(synced, __func__, N, res, oldVal, oldSeq, gen.state(), gen.sequence());
 		return res;
 	} // [0,1) rounded to multiple of 1/N
 	float NextFloat24() {
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		float res = NextFloat24Impl();
-		MyCondLog(__func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
+		GlobalRNGLog::MyCondLog(synced, __func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
 		return res;
 	} // [0,1) rounded to multiple of 1/(2^#digits)
 
@@ -174,7 +174,7 @@ public:
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		float3 res = NextVectorImpl(y);
-		GlobalRNGLog::MyCondLog(__func__, y, res.x, res.y, res.z, oldVal, oldSeq, gen.state(), gen.sequence());
+		GlobalRNGLog::MyCondLog(synced, __func__, y, res.x, res.y, res.z, oldVal, oldSeq, gen.state(), gen.sequence());
 		return res;
 	}
 private:

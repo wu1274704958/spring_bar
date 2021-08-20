@@ -8,9 +8,9 @@
 struct GlobalRNGLog {
 	static bool DoLog();
 	template<typename ...Args>
-	static constexpr void MyCondLog(Args && ...args) noexcept
+	static constexpr void MyCondLog(bool synced, Args && ...args) noexcept
 	{
-		if (!DoLog())
+		if (!synced || !DoLog())
 			return;
 
 		std::ostringstream ss;
