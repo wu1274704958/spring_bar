@@ -101,7 +101,9 @@ void CCannon::FireImpl(const bool scriptCall)
 	float3 targetVec = currentTargetPos - weaponMuzzlePos;
 	float3 launchDir = (targetVec.SqLength() > 4.0f) ? GetWantedDir(targetVec) : targetVec; // prevent vertical aim when emit-sfx firing the weapon
 
-	launchDir += (gsRNG.NextVector() * SprayAngleExperience() + SalvoErrorExperience());
+	float3 launchDirTmp = gsRNG.NextVector();
+	launchDir += (launchDirTmp * SprayAngleExperience() + SalvoErrorExperience());
+	float3 launchDirTmp2 = launchDir;
 	launchDir.SafeNormalize();
 
 	int ttl = 0;
@@ -128,9 +130,13 @@ void CCannon::FireImpl(const bool scriptCall)
 	params.gravity = gravity;
 
 	if (gs->frameNum == 9625) {
-		LOG("CCannon::FireImpl(9625) pos(%f %f %f), end(%f %f %f), speed(%f %f %f) ttl(%d) gravity(%f)", \
+		LOG("CCannon::FireImpl(9625) pos(%f %f %f), end(%f %f %f), launchDirTmp(%f %f %f) launchDirTmp2(%f %f %f) launchDir(%f %f %f) projectileSpeed(%f) speed(%f %f %f) ttl(%d) gravity(%f)", \
 			params.pos.x, params.pos.y, params.pos.z, \
 			params.end.x, params.end.y, params.end.z, \
+			launchDirTmp.x, launchDirTmp.y, launchDirTmp.z, \
+			launchDirTmp2.x, launchDirTmp2.y, launchDirTmp2.z, \
+			launchDir.x, launchDir.y, launchDir.z, \
+			projectileSpeed, \
 			params.speed.x, params.speed.y, params.speed.z, \
 			params.ttl, \
 			params.gravity
