@@ -5,5 +5,5 @@
 
 bool GlobalRNGLog::DoLog()
 {
-	return (gs->frameNum == 9625);
+	return (gs->frameNum >= 9624 && gs->frameNum <= 9625);
 }
