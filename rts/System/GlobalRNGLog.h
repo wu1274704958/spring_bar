@@ -17,5 +17,5 @@ struct GlobalRNGLog {
 		((ss << std::forward<Args>(args) << " "), ...);
 		LOG("GlobalRNGLog::MyCondLog: %s", ss.str().c_str());
 	}
-	static void StackTrace() noexcept;
+	static void StackTrace();
 };

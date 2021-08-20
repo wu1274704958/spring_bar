@@ -9,7 +9,10 @@ bool GlobalRNGLog::DoLog()
 	return (gs->frameNum >= 9624 && gs->frameNum <= 9625);
 }
 
-void GlobalRNGLog::StackTrace() noexcept
+void GlobalRNGLog::StackTrace()
 {
-	CrashHandler::OutputStacktrace();
+	CrashHandler::PrepareStacktrace();
+	CrashHandler::Stacktrace(Threading::GetCurrentThread(), "main", LOG_LEVEL_ERROR);
+	CrashHandler::CleanupStacktrace();
+	spring::this_thread::sleep_for(std::chrono::seconds(1));
 }
