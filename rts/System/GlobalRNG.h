@@ -9,6 +9,7 @@
 #include "System/float3.h"
 
 #include "GlobalRNGLog.h"
+#include "System/Log/ILog.h"
 
 #if 0
 struct LCG16 {
@@ -143,7 +144,12 @@ public:
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		rng_res_type res = NextIntImpl(N);
+
 		GlobalRNGLog::MyCondLog(synced, __func__, N, res, oldVal, oldSeq, gen.state(), gen.sequence());
+
+		if (oldVal == 1040676806616772141)
+			GlobalRNGLog::StackTrace();
+
 		return res;
 	}
 
