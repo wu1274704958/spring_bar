@@ -15,6 +15,6 @@ struct GlobalRNGLog {
 
 		std::ostringstream ss;
 		((ss << std::forward<Args>(args) << " "), ...);
-		LOG("%s", ss.str().c_str());
+		LOG("GlobalRNGLog::MyCondLog: %s", ss.str().c_str());
 	}
 };
