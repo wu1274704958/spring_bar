@@ -8,7 +8,7 @@
 #include "lib/streflop/streflop_cond.h"
 #include "System/float3.h"
 
-
+#include "GlobalRNGLog.h"
 
 #if 0
 struct LCG16 {
@@ -59,6 +59,30 @@ public:
 	}
 
 	res_type next() {
+		val_type valBefore = val;
+		val_type seqBefore = seq;
+		res_type res = nextImpl();
+		GlobalRNGLog::MyCondLog(__func__, valBefore, seqBefore, val, seq, res);
+		return res;
+	}
+
+	res_type bnext(const res_type bound) {
+		val_type valBefore = val;
+		val_type seqBefore = seq;
+		res_type res = bnextImpl(bound);
+		GlobalRNGLog::MyCondLog(__func__, bound, valBefore, seqBefore, val, seq, res);
+		return res;
+	}
+
+	val_type state() const { return val; }
+
+public:
+	static constexpr res_type min_res = std::numeric_limits<res_type>::min();
+	static constexpr res_type max_res = std::numeric_limits<res_type>::max();
+	static constexpr val_type def_val = 0x853c49e6748fea9bULL;
+	static constexpr val_type def_seq = 0xda3e39cb94b95bdbULL;
+private:
+	res_type nextImpl() {
 		const val_type oldval = val;
 
 		// advance internal state
@@ -70,7 +94,7 @@ public:
 		return ((xsh >> rot) | (xsh << ((-rot) & 31)));
 	}
 
-	res_type bnext(const res_type bound) {
+	res_type bnextImpl(const res_type bound) {
 		const res_type threshold = -bound % bound;
 		res_type r = 0;
 
@@ -79,19 +103,11 @@ public:
 
 		return (r % bound);
 	}
-
-	val_type state() const { return val; }
-
-public:
-	static constexpr res_type min_res = std::numeric_limits<res_type>::min();
-	static constexpr res_type max_res = std::numeric_limits<res_type>::max();
-	static constexpr val_type def_val = 0x853c49e6748fea9bULL;
-	static constexpr val_type def_seq = 0xda3e39cb94b95bdbULL;
-
 private:
 	val_type val;
 	val_type seq;
 };
+
 
 
 
@@ -117,22 +133,33 @@ public:
 	rng_val_type GetGenState() const { return (gen.state()); }
 
 	// needed for std::{random_}shuffle
-	rng_res_type operator()(              ) { return (gen. next( )); }
-	rng_res_type operator()(rng_res_type N) { return (gen.bnext(N)); }
+	rng_res_type operator()() { rng_res_type res = opBracketImpl(); GlobalRNGLog::MyCondLog(__func__, res); return res; }
+	rng_res_type operator()(rng_res_type N) { rng_res_type res = opBracketImpl(N); GlobalRNGLog::MyCondLog(__func__, N,  res); return res; }
 
 	static constexpr rng_res_type  min() { return RNG::min_res; }
 	static constexpr rng_res_type  max() { return RNG::max_res; }
 	static constexpr rng_res_type ndig() { return std::numeric_limits<float>::digits; }
 
 	// [0, N)
-	rng_res_type NextInt(rng_res_type N = max()) { return ((*this)(N)); }
+	rng_res_type NextInt(rng_res_type N = max()) { rng_res_type res = NextIntImpl(N); GlobalRNGLog::MyCondLog(__func__, N, res); return res; }
 
-	float NextFloat() { return (NextFloat01(1 << ndig())); }
-	float NextFloat01(rng_res_type N) { return ((NextInt(N) * 1.0f) / N); } // [0,1) rounded to multiple of 1/N
-	float NextFloat24() { return (math::ldexp(NextInt(1 << ndig()), -ndig())); } // [0,1) rounded to multiple of 1/(2^#digits)
+	float NextFloat() { float res = NextFloatImpl(); GlobalRNGLog::MyCondLog(__func__, res); return res; }
+	float NextFloat01(rng_res_type N) { float res = NextFloat01Impl(N); GlobalRNGLog::MyCondLog(__func__, N, res); return res; } // [0,1) rounded to multiple of 1/N
+	float NextFloat24() { float res = NextFloat24Impl(); MyCondLog(__func__, res); return res; } // [0,1) rounded to multiple of 1/(2^#digits)
 
 	float3 NextVector2D() { return (NextVector(0.0f)); }
-	float3 NextVector(float y = 1.0f) {
+	float3 NextVector(float y = 1.0f) { float3 res = NextVectorImpl(y); GlobalRNGLog::MyCondLog(__func__, y, res.x, res.y, res.z); return res; }
+private:
+	rng_res_type opBracketImpl(              ) { return (gen. next( )); }
+	rng_res_type opBracketImpl(rng_res_type N) { return (gen.bnext(N)); }
+
+	rng_res_type NextIntImpl (rng_res_type N = max()) { return ((*this)(N)); }
+
+	float NextFloatImpl() { return (NextFloat01(1 << ndig())); }
+	float NextFloat01Impl(rng_res_type N) { return ((NextInt(N) * 1.0f) / N); } // [0,1) rounded to multiple of 1/N
+	float NextFloat24Impl() { return (math::ldexp(NextInt(1 << ndig()), -ndig())); } // [0,1) rounded to multiple of 1/(2^#digits)
+
+	float3 NextVectorImpl(float y = 1.0f) {
 		float3 ret;
 
 		do {
@@ -143,7 +170,6 @@ public:
 
 		return ret;
 	}
-
 private:
 	RNG gen;
 
@@ -158,4 +184,3 @@ typedef CGlobalRNG<PCG32, true> CGlobalSyncedRNG;
 typedef CGlobalRNG<PCG32, false> CGlobalUnsyncedRNG;
 
 #endif
-

@@ -260,7 +260,7 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 
 	#ifdef DUMP_PROJECTILE_FREE
 	file << "\t\tfreeProjectileIDs.size(): " << projectileHandler.GetFreeProjectileIDs(true).size() << "\n";
-	file << "\t\tfreeProjectileIDs: " << projectileHandler.GetFreeProjectileIDs(true).size();
+	file << "\t\tfreeProjectileIDs: " << "\n";
 	for (int id : projectileHandler.GetFreeProjectileIDs(true)) {
 		file << id << " ";
 	}
