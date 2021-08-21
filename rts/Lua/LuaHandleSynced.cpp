@@ -832,6 +832,9 @@ bool CSyncedLuaHandle::AllowFeatureCreation(const FeatureDef* featureDef, int te
 
 bool CSyncedLuaHandle::AllowFeatureBuildStep(const CUnit* builder, const CFeature* feature, float part)
 {
+	if (gs->frameNum == 9625)
+		LOG("%s", "KEK");
+
 	LUA_CALL_IN_CHECK(L, true);
 	luaL_checkstack(L, 7, __func__);
 

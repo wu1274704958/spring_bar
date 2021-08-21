@@ -145,6 +145,10 @@ public:
 		rng_val_type oldSeq = gen.sequence();
 		rng_res_type res = NextIntImpl(N);
 		GlobalRNGLog::MyCondLog(synced, __func__, N, res, oldVal, oldSeq, gen.state(), gen.sequence());
+
+		if (oldVal == 9778744227317983687)
+			LOG("%s", "LOL KEK");
+
 		return res;
 	}
 
