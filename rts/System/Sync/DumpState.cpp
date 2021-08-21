@@ -13,6 +13,7 @@
 #include "Rendering/Models/3DModel.h"
 #include "Sim/Features/Feature.h"
 #include "Sim/Features/FeatureDef.h"
+#include "Sim/Features/FeatureDefHandler.h"
 #include "Sim/Features/FeatureHandler.h"
 #include "Sim/Misc/GlobalSynced.h"
 #include "Sim/Misc/TeamHandler.h"
@@ -20,12 +21,14 @@
 #include "Sim/Misc/SmoothHeightMesh.h"
 #include "Sim/MoveTypes/MoveType.h"
 #include "Sim/Projectiles/Projectile.h"
+#include "Sim/Weapons/WeaponDefHandler.h"
 #include "Sim/Projectiles/ProjectileHandler.h"
 #include "Sim/Projectiles/WeaponProjectiles/WeaponProjectile.h"
 #include "Sim/Units/CommandAI/CommandAI.h"
 #include "Sim/Units/Unit.h"
 #include "Sim/Units/UnitDef.h"
 #include "Sim/Units/UnitHandler.h"
+#include "Sim/Units/UnitDefHandler.h"
 #include "Sim/Weapons/Weapon.h"
 #include "Sim/Weapons/WeaponDefHandler.h"
 #include "Map/ReadMap.h"
@@ -46,6 +49,13 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 	// must be in debug-mode for this
 	return;
 	#endif
+
+	#define DUMP_UNITDEF
+	//#define DUMP_UNITDEF_CHECKSUM
+	#define DUMP_FEATUREDEF
+	//#define DUMP_FEATUREDEF_CHECKSUM
+	#define DUMP_WEAPONDEF
+	//#define DUMP_WEAPONDEF_CHECKSUM
 
 	const int oldMinFrameNum = gMinFrameNum;
 	const int oldMaxFrameNum = gMaxFrameNum;
@@ -87,6 +97,27 @@ void DumpState(int newMinFrameNum, int newMaxFrameNum, int newFramePeriod)
 			file << "maxFrame: " << gMaxFrameNum << "\n";
 			file << "randSeed: " << gsRNG.GetLastSeed() << "\n";
 			file << "initSeed: " << gsRNG.GetInitSeed() << "\n";
+
+			#ifdef DUMP_UNITDEF
+			file << "\tunitDefs: " << unitDefHandler->GetUnitDefsVec().size() << "\n";
+			for (const auto& d : unitDefHandler->GetUnitDefsVec()) {
+				file << "\t\tunitDefID: " << d.id << " (name: " << d.name << ")" << "(tooltip: " << d.tooltip << ")" << "\n";
+			}
+			#endif
+
+			#ifdef DUMP_FEATUREDEF
+			file << "\tfeatureDefs: " << featureDefHandler->GetFeatureDefsVec().size() << "\n";
+			for (const auto& d : featureDefHandler->GetFeatureDefsVec()) {
+				file << "\t\tfeatureDefID: " << d.id << " (name: " << d.name << ")" << "(tooltip: " << d.description << ")" << "\n";
+			}
+			#endif
+
+			#ifdef DUMP_WEAPONDEF
+			file << "\tweaponDefs: " << weaponDefHandler->GetWeaponDefsVec().size() << "\n";
+			for (const auto& d : weaponDefHandler->GetWeaponDefsVec()) {
+				file << "\t\tfeatureDefID: " << d.id << " (name: " << d.name << ")" << "(tooltip: " << d.description << ")" << "\n";
+			}
+			#endif
 		}
 
 		LOG("[%s] using dump-file \"%s\"", __func__, name.c_str());
