@@ -155,7 +155,7 @@ public:
 		GlobalRNGLog::MyCondLog(synced, __func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
 
 		if (oldVal == 1040676806616772141)
-			GlobalRNGLog::StackTrace();
+			LOG("%s", "LOL KEK");
 
 		return res;
 	}
