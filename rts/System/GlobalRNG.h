@@ -144,12 +144,7 @@ public:
 		rng_val_type oldVal = gen.state();
 		rng_val_type oldSeq = gen.sequence();
 		rng_res_type res = NextIntImpl(N);
-
 		GlobalRNGLog::MyCondLog(synced, __func__, N, res, oldVal, oldSeq, gen.state(), gen.sequence());
-
-		if (oldVal == 1040676806616772141)
-			GlobalRNGLog::StackTrace();
-
 		return res;
 	}
 
@@ -158,6 +153,10 @@ public:
 		rng_val_type oldSeq = gen.sequence();
 		float res = NextFloatImpl();
 		GlobalRNGLog::MyCondLog(synced, __func__, res, oldVal, oldSeq, gen.state(), gen.sequence());
+
+		if (oldVal == 1040676806616772141)
+			GlobalRNGLog::StackTrace();
+
 		return res;
 	}
 	float NextFloat01(rng_res_type N) {
