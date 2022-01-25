@@ -30,6 +30,9 @@
 #include "System/StringUtil.h"
 #include "System/Threading/ThreadPool.h" // for_mt
 
+#include <fstream>
+#include "fmt/format.h"
+
 #define ENABLE_NETLOG_CHECKSUM 1
 
 static constexpr int BLOCK_UPDATE_DELAY_FRAMES = GAME_SPEED / 2;
@@ -167,7 +170,7 @@ void PathingState::Terminate()
 {
 	if (pathCache[0] != nullptr)
 		pcMemPool.free(pathCache[0]);
-	
+
 	if (pathCache[1] != nullptr)
 		pcMemPool.free(pathCache[1]);
 
@@ -483,7 +486,7 @@ void PathingState::CalcVertexPathCost(
 		// 	LOG("Allow Raw %d", (int)pfDef.allowRawPath);
 		// }
 		result = pathFinders[threadNum]->GetPath(moveDef, pfDef, nullptr, startPos, path, MAX_SEARCHED_NODES_PF >> 2);
-		
+
 		// if (TEST_ACTIVE){
 		// 	LOG("TK PathingState::CalcVertexPathCost parent %d, child %d PathCost %f (result: %d) vertexId %d, tested %d, blks %d [MoveType %d : %d]"
 		// 	, parentBlockIdx, childBlockIdx, path.pathCost, result, vertexCostIdx, pathFinders[threadNum]->testedBlocks, BLOCK_SIZE, moveDef.pathType, moveDef.xsize);
@@ -827,6 +830,16 @@ std::uint32_t PathingState::CalcChecksum() const
 	// 	}
 	// }
 
+	std::fstream file;
+	std::string name = "TKPFS_PathingState_CalcChecksum-" + IntToString(BLOCK_SIZE) + "-" + IntToString(guRNG.NextInt()) + ".txt";
+	file.open(name, std::ios::out);
+	for (int i = 0; i < nbytes; i+=4) {
+		file << fmt::format("{0:x}", *reinterpret_cast<uint32_t*>(rawBytes.data() + i)) << ",";
+		if (i % 64 == 0)
+			file << "\n";
+	}
+	file << "\n";
+
 	{
 		nbytes = vertexCosts.size() * sizeof(float);
 		offset += nbytes;
@@ -838,6 +851,7 @@ std::uint32_t PathingState::CalcChecksum() const
 
 		SNPRINTF(msgBuffer.data(), msgBuffer.size(), "[PE::%s][BLK_SIZE=%d][SHA_DATA=%s]", __func__, BLOCK_SIZE, hexChars.data());
 		CLIENT_NETLOG(gu->myPlayerNum, LOG_LEVEL_INFO, msgBuffer.data());
+		file << std::string(msgBuffer.data()) << "\n";
 	}
 	#endif
 
@@ -854,6 +868,10 @@ std::uint32_t PathingState::CalcChecksum() const
 		if (chksum == 0)
 			chksum = su;
 	}
+
+	file << "Checksum BS(" << BLOCK_SIZE << ")=" << chksum << "\n";
+	file.flush();
+	file.close();
 
 	return chksum;
 }
