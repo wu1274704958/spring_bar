@@ -20,14 +20,6 @@
 #define STBI_NO_FAILURE_STRINGS
 #endif
 
-static void* TexMemPoolMalloc(size_t size);
-static void* TexMemPoolReAllocSized(void* ptr, size_t oldsz, size_t newsz);
-static void  TexMemPoolFree(void* ptr);
-
-//#define STBI_MALLOC(sz)                    (TexMemPoolMalloc(sz))
-//#define STBI_REALLOC_SIZED(p,oldsz,newsz)  (TexMemPoolReAllocSized(p, oldsz, newsz))
-//#define STBI_FREE(p)                       (TexMemPoolFree(p))
-
 #include <stb/stb_image.h>
 
 #include "Bitmap.h"
@@ -55,7 +47,6 @@ private:
 
 	std::vector<uint8_t> memArray;
 	std::vector<FreePair> freeList;
-	std::unordered_map<size_t, size_t> allocList; //idx, size
 
 	// libIL is not thread-safe, neither are {Alloc,Free}
 	spring::mutex bmpMutex;
@@ -135,8 +126,6 @@ public:
 		numAllocs += 1;
 		allocSize += size;
 
-		allocList.emplace(mem - Base(), size);
-
 		#endif
 		return mem;
 	}
@@ -154,27 +143,9 @@ public:
 		if (mem == nullptr)
 			return;
 
-		const auto it = allocList.find(mem - Base());
-
-#ifdef _DEBUG
-		if (unlikely(it == allocList.cend())) {
-			assert(false);
-		}
-#endif
-
-		if (size == 0) {
-			size = it->second;
-		}
-#ifdef _DEBUG
-		else {
-			assert(size == it->second);
-		}
-#endif
-
 		assert(size != 0);
 		memset(mem, 0, size);
 		freeList.emplace_back(mem - Base(), size);
-		allocList.erase(it);
 
 		#if 0
 		{
@@ -206,7 +177,6 @@ public:
 
 	void Dispose() {
 		freeList = {};
-		allocList = {};
 		memArray = {};
 
 		numAllocs = 0;
@@ -228,7 +198,6 @@ public:
 			freeList.emplace_back(Size(), size - Size());
 			memArray.resize(size, 0);
 		}
-		// allocList is relative, doesn't need realloc
 
 		LOG_L(L_INFO, "[TexMemPool::%s] poolSize=" _STPF_ "u allocSize=" _STPF_ "u texCount=" _STPF_ "u", __func__, size, allocSize, numAllocs - numFrees);
 	}
@@ -296,18 +265,6 @@ public:
 };
 
 static TexMemPool texMemPool;
-
-static void* TexMemPoolMalloc(size_t size) {
-	return reinterpret_cast<void*>(texMemPool.Alloc(size));
-}
-static void* TexMemPoolReAllocSized(void* ptr, size_t oldsz, size_t newsz) {
-	texMemPool.Free(reinterpret_cast<uint8_t*>(ptr), oldsz);
-	return reinterpret_cast<void*>(texMemPool.Alloc(newsz));
-}
-static void TexMemPoolFree(void* ptr) {
-	texMemPool.Free(reinterpret_cast<uint8_t*>(ptr), 0);
-}
-
 
 
 static constexpr float blurkernel[9] = {
