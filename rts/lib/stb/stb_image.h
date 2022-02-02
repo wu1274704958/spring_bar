@@ -7059,9 +7059,10 @@ static void stbi__hdr_convert(float *output, stbi_uc *input, int req_comp)
       if (req_comp <= 2)
          output[0] = (input[0] + input[1] + input[2]) * f1 / 3;
       else {
-         output[0] = input[0] * f1;
-         output[1] = input[1] * f1;
-         output[2] = input[2] * f1;
+         // http://cbloomrants.blogspot.com/2020/06/widespread-error-in-radiance-hdr-rgbe.html
+         output[0] = (input[0] + 0.5f) * f1;
+         output[1] = (input[1] + 0.5f) * f1;
+         output[2] = (input[2] + 0.5f) * f1;
       }
       if (req_comp == 2) output[1] = 1;
       if (req_comp == 4) output[3] = 1;
