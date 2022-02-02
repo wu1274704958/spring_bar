@@ -3457,6 +3457,7 @@ int LuaOpenGL::TextureInfo(lua_State* L)
 	HSTR_PUSH_NUMBER(L, "target", tex.GetTextureTarget());
 	// HSTR_PUSH_BOOL(L,   "alpha", texInfo.alpha);  FIXME
 	// HSTR_PUSH_NUMBER(L, "type",  texInfo.type);
+
 	return 1;
 }
 

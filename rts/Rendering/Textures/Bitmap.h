@@ -17,10 +17,17 @@ struct SDL_Surface;
 
 class CBitmap {
 public:
-	CBitmap() = default;
-	CBitmap(const uint8_t* data, int xsize, int ysize, int channels = 4);
+	CBitmap()
+		: xsize(0)
+		, ysize(0)
+		, channels(4)
+		, dataType(0x1401) //GL_UNSIGNED_BYTE
+		, dataTypeSize(1)
+		, compressed(false)
+	{}
+	CBitmap(const uint8_t* data, int xsize, int ysize, int channels = 4, uint32_t dataType = 0x1401);
 	CBitmap(const CBitmap& bmp): CBitmap() { *this = bmp; }
-	CBitmap(CBitmap&& bmp): CBitmap() { *this = std::move(bmp); }
+	CBitmap(CBitmap&& bmp) noexcept : CBitmap() { *this = std::move(bmp); }
 	CBitmap& operator=(const CBitmap& bmp);
 	CBitmap& operator=(CBitmap&& bmp) noexcept;
 
@@ -36,9 +43,9 @@ public:
 	void AllocDummy(const SColor fill = SColor(255, 0, 0, 255));
 
 	/// Load data from a file on the VFS
-	bool Load(std::string const& filename, uint8_t defaultAlpha = 255);
+	bool Load(std::string const& filename, float defaultAlpha = 1.0f, int32_t reqNumChannel = 4, uint32_t reqDataType = 0);
 	/// Load data from a gray-scale file on the VFS
-	bool LoadGrayscale(std::string const& filename);
+	bool LoadGrayscale(std::string const& filename) { return Load(filename, 1.0f, 1, 0x1401); };
 
 	bool Save(const std::string& filename, bool opaque = true, bool logged = false) const;
 	bool SaveGrayScale(const std::string& filename) const;
@@ -46,10 +53,10 @@ public:
 
 	bool Empty() const { return (memIdx == size_t(-1)); } // implies size=0
 
-	unsigned int CreateTexture(float aniso = 0.0f, float lodBias = 0.0f, bool mipmaps = false, uint32_t texID = 0) const;
-	unsigned int CreateMipMapTexture(float aniso = 0.0f, float lodBias = 0.0f) const { return (CreateTexture(aniso, lodBias, true)); }
-	unsigned int CreateAnisoTexture(float aniso = 0.0f, float lodBias = 0.0f) const { return (CreateTexture(aniso, lodBias, false)); }
-	unsigned int CreateDDSTexture(unsigned int texID = 0, float aniso = 0.0f, float lodBias = 0.0f, bool mipmaps = false) const;
+	uint32_t CreateTexture(float aniso = 0.0f, float lodBias = 0.0f, bool mipmaps = false, uint32_t texID = 0) const;
+	uint32_t CreateMipMapTexture(float aniso = 0.0f, float lodBias = 0.0f) const { return (CreateTexture(aniso, lodBias, true)); }
+	uint32_t CreateAnisoTexture(float aniso = 0.0f, float lodBias = 0.0f) const { return (CreateTexture(aniso, lodBias, false)); }
+	uint32_t CreateDDSTexture(uint32_t texID = 0, float aniso = 0.0f, float lodBias = 0.0f, bool mipmaps = false) const;
 
 	void CreateAlpha(uint8_t red, uint8_t green, uint8_t blue);
 	void SetTransparent(const SColor& c, const SColor trans = SColor(0, 0, 0, 0));
@@ -77,16 +84,19 @@ public:
 	const uint8_t* GetRawMem() const;
 	      uint8_t* GetRawMem()      ;
 
-	size_t GetMemSize() const { return (xsize * ysize * channels); }
-
+	void UpdateDataTypeSize();
+	int32_t GetIntFmt() const;
+	int32_t GetExtFmt() const;
+	size_t GetMemSize() const { return (xsize * ysize * channels * dataTypeSize); }
 private:
 	// managed by pool
 	size_t memIdx = size_t(-1);
-
 public:
-	int32_t xsize = 0;
-	int32_t ysize = 0;
-	int32_t channels = 4;
+	int32_t xsize;
+	int32_t ysize;
+	int32_t channels;
+	int32_t dataType;
+	size_t dataTypeSize;
 
 	#ifndef BITMAP_NO_OPENGL
 	// GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP, ...
