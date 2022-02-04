@@ -101,7 +101,7 @@ namespace spring {
 #endif
 
     template<typename TOut, typename TIn>
-    TOut bit_cast(TIn t1) {
+    TOut bit_cast(TIn&& t1) {
         static_assert(sizeof(TIn) == sizeof(TOut), "Types must match sizes");
         static_assert(std::is_trivially_copyable<TIn>::value , "Requires TriviallyCopyable input");
         static_assert(std::is_trivially_copyable<TOut>::value, "Requires TriviallyCopyable output");

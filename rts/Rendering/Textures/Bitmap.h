@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #ifndef BITMAP_NO_OPENGL
 	#include "nv_dds.h"
 #endif // !BITMAP_NO_OPENGL
@@ -14,17 +15,10 @@
 
 struct SDL_Surface;
 
-
+class BitmapAction;
 class CBitmap {
 public:
-	CBitmap()
-		: xsize(0)
-		, ysize(0)
-		, channels(4)
-		, dataType(0x1401) //GL_UNSIGNED_BYTE
-		, dataTypeSize(1)
-		, compressed(false)
-	{}
+	CBitmap();
 	CBitmap(const uint8_t* data, int xsize, int ysize, int channels = 4, uint32_t dataType = 0x1401);
 	CBitmap(const CBitmap& bmp): CBitmap() { *this = bmp; }
 	CBitmap(CBitmap&& bmp) noexcept : CBitmap() { *this = std::move(bmp); }
@@ -38,7 +32,8 @@ public:
 
 	static void InitPool(size_t size);
 
-	void Alloc(int w, int h, int c);
+	void Alloc(int w, int h, int c, uint32_t dt);
+	void Alloc(int w, int h, int c) { Alloc(w, h, c, dataType); }
 	void Alloc(int w, int h) { Alloc(w, h, channels); }
 	void AllocDummy(const SColor fill = SColor(255, 0, 0, 255));
 
@@ -61,7 +56,7 @@ public:
 	void CreateAlpha(uint8_t red, uint8_t green, uint8_t blue);
 	void SetTransparent(const SColor& c, const SColor trans = SColor(0, 0, 0, 0));
 
-	void Renormalize(float3 newCol);
+	void Renormalize(const float3& newCol);
 	void Blur(int iterations = 1, float weight = 1.0f);
 	void Fill(const SColor& c);
 
@@ -84,19 +79,20 @@ public:
 	const uint8_t* GetRawMem() const;
 	      uint8_t* GetRawMem()      ;
 
-	void UpdateDataTypeSize();
 	int32_t GetIntFmt() const;
 	int32_t GetExtFmt() const;
-	size_t GetMemSize() const { return (xsize * ysize * channels * dataTypeSize); }
+	size_t GetMemSize() const;
 private:
+	void CreateBitmapAction();
 	// managed by pool
 	size_t memIdx = size_t(-1);
 public:
+	std::unique_ptr<BitmapAction> bitmapAction;
+
 	int32_t xsize;
 	int32_t ysize;
 	int32_t channels;
 	int32_t dataType;
-	size_t dataTypeSize;
 
 	#ifndef BITMAP_NO_OPENGL
 	// GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP, ...

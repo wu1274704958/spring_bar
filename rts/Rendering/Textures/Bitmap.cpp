@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <utility>
 #include <cstring>
+#include <cassert>
+#include <typeindex>
+
 
 #include <SDL_video.h>
 
@@ -15,9 +18,9 @@
 #define STBI_NO_STDIO
 #define STBI_NO_GIF
 #ifdef _DEBUG
-#define STBI_FAILURE_USERMSG
+	#define STBI_FAILURE_USERMSG
 #else
-#define STBI_NO_FAILURE_STRINGS
+	#define STBI_NO_FAILURE_STRINGS
 #endif
 
 #include <stb/stb_image.h>
@@ -273,7 +276,7 @@ static constexpr float blurkernel[9] = {
 	1.0f/16.0f, 2.0f/16.0f, 1.0f/16.0f
 };
 // this is a minimal list of file formats that (should) be available at all platforms
-static constexpr char* extList[] = {
+static constexpr const char* extList[] = {
 	"bmp", "tga", "dds", "png", "jpg", "jpeg", "psd", "hdr", "pic"
 };
 
@@ -282,10 +285,282 @@ static bool IsValidImageExt(const char* ext)
 	return std::find_if(std::cbegin(extList), std::cend(extList), [ext](const char* extV) { return strcmp(ext, extV) == 0; }) != std::cend(extList);
 }
 
-static bool IsHDRImageExt(const char* ext)
+
+//////////////////////////////////////////////////////////////////////
+// BitmapAction
+//////////////////////////////////////////////////////////////////////
+
+class BitmapAction {
+public:
+	BitmapAction() = delete;
+	BitmapAction(CBitmap* bmp_)
+		: bmp{ bmp_ }
+	{}
+
+	BitmapAction(const BitmapAction& ba) = delete;
+	BitmapAction(BitmapAction&& ba) noexcept = delete;
+
+	BitmapAction& operator=(const BitmapAction& ba) = delete;
+	BitmapAction& operator=(BitmapAction&& ba) noexcept = delete;
+
+	void SwapBmp(std::unique_ptr<BitmapAction>& baPtr) noexcept {
+		std::swap(bmp, baPtr->bmp);
+	}
+
+	virtual uint32_t GetPixelSize() const = 0;
+	virtual uint32_t GetPixelChannelSize() const = 0;
+
+	virtual void Renormalize(const float3& newCol) = 0;
+	virtual void Blur(int iterations = 1, float weight = 1.0f) = 0;
+	virtual void Fill(const SColor& c) = 0;
+
+	virtual void InvertColors() = 0;
+	virtual void InvertAlpha() = 0;
+
+	static std::unique_ptr<BitmapAction> GetBitmapAction(CBitmap* bmp);
+protected:
+	CBitmap* bmp;
+};
+
+template <typename T, size_t N>
+class myarray {
+public:
+	using A = myarray<T, N>;
+
+	myarray() {
+		std::fill(std::begin(storage), std::end(storage), T{});
+	}
+	myarray(std::initializer_list<T> l) {
+		if (l.size() == 1)
+			std::fill(std::begin(storage), std::end(storage), *l.begin());
+		else {
+			assert(l.size() == N);
+			std::copy(l.begin(), l.end(), std::begin(storage));
+		}
+	}
+	myarray(T&& l) {
+		std::fill(std::begin(storage), std::end(storage), std::forward<T>(l));
+	}
+
+	myarray(const myarray& rhs) : myarray() { *this = rhs; }
+	myarray(myarray&& rhs) noexcept { *this = std::move(rhs); }
+	myarray& operator=(const myarray& rhs) {
+		std::copy(rhs.cbegin(), rhs.cend(), begin());
+		return *this;
+	}
+	myarray& operator=(myarray&& rhs) noexcept {
+		std::swap(storage, rhs.storage);
+		return *this;
+	}
+
+	A operator * (const A& f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] *= f[n];
+		}
+		return a;
+	}
+	A operator / (const A& f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] /= f[n];
+		}
+		return a;
+	}
+	A operator + (const A& f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] += f[n];
+		}
+		return a;
+	}
+	A operator - (const A& f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] -= f[n];
+		}
+		return a;
+	}
+
+	A operator * (const T f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] *= f;
+		}
+		return a;
+	}
+	A operator / (const T f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] /= f;
+		}
+		return a;
+	}
+	A operator + (const T f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] += f;
+		}
+		return a;
+	}
+	A operator - (const T f) const {
+		A a = *this;
+		for (size_t n = 0; n < size(); ++n) {
+			a.storage[n] -= f;
+		}
+		return a;
+	}
+
+	A& operator *= (const A& f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] *= f[n];
+		}
+		return *this;
+	}
+	A& operator /= (const A& f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] /= f[n];
+		}
+		return *this;
+	}
+	A& operator += (const A& f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] += f[n];
+		}
+		return *this;
+	}
+	A& operator -= (const A& f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] -= f[n];
+		}
+		return *this;
+	}
+
+	A& operator *= (const T f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] *= f;
+		}
+		return *this;
+	}
+	A& operator /= (const T f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] /= f;
+		}
+		return *this;
+	}
+	A& operator += (const T f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] += f;
+		}
+		return *this;
+	}
+	A& operator -= (const T f) {
+		for (size_t n = 0; n < size(); ++n) {
+			storage[n] -= f;
+		}
+		return *this;
+	}
+
+	      T& operator[](size_t idx)       { assert(idx >= 0 && idx < N); return storage[idx]; }
+	const T& operator[](size_t idx) const { assert(idx >= 0 && idx < N); return storage[idx]; }
+
+	constexpr size_t size() const { return N * sizeof(T); }
+	constexpr auto begin()  { return std::begin(storage); }
+	constexpr auto end()    { return std::end(storage);   }
+	constexpr auto cbegin() const { return std::cbegin(storage); }
+	constexpr auto cend()   const { return std::cend(storage); }
+	constexpr auto rbegin() { return std::rbegin(storage); }
+	constexpr auto rend()   { return std::rend(storage); }
+	constexpr auto rbegin() const { return std::crbegin(storage); }
+	constexpr auto end()    const { return std::crend(storage); }
+protected:
+	T storage[N];
+};
+
+template<typename T, uint32_t ch>
+class TBitmapAction : public BitmapAction {
+public:
+	using CT = T;
+	using PT = myarray<T, ch>;
+
+	using AccumCT = typename std::conditional<std::is_same_v<T, float>, float, uint32_t>::type;
+
+	using CTR = uint8_t[sizeof(T) *  1];
+	using PTR = uint8_t[sizeof(T) * ch];
+public:
+	TBitmapAction() = delete;
+	TBitmapAction(CBitmap* bmp_)
+		: BitmapAction(bmp_)
+	{}
+
+	constexpr CT GetMaxLDRValue() const {
+		if constexpr (std::is_same_v<T, float>) {
+			return 1.0f;
+		}
+		else {
+			return std::numeric_limits<T>::max();
+		}
+	}
+
+	PT& GetRef(uint32_t xyOffset) {
+		auto* mem = bmp->GetRawMem();
+		assert(mem && xyOffset >= 0 && xyOffset <= bmp->GetMemSize() - sizeof(PTR));
+		//return *static_cast<PT*>(static_cast<PTR*>(mem[xyOffset]));
+		return *(reinterpret_cast<PT*>(&mem[xyOffset]));
+	}
+
+	CT& GetRef(uint32_t xyOffset, uint32_t chan) {
+		assert(chan > 0 && chan < 4);
+		return GetRef(xyOffset)[chan];
+	}
+
+	uint32_t GetPixelSize() const override {
+		return sizeof(PT);
+	}
+
+	uint32_t GetPixelChannelSize() const override {
+		return sizeof(CT);
+	}
+
+	//CBitmap CanvasResize(const int newx, const int newy, const bool center = true) const;
+	//CBitmap CreateRescaled(int newx, int newy) const;
+	void Renormalize(const float3& newCol) override;
+	void Blur(int iterations = 1, float weight = 1.0f) override;
+	void Fill(const SColor& c) override;
+	void InvertColors() override;
+	void InvertAlpha() override;
+};
+
+//fugly way to make CH compile time constant
+#define GET_BITMAP_ACTION_HELPER(CH) do { \
+	if (bmp->channels == CH) { \
+		switch (bmp->dataType) { \
+			case GL_FLOAT         : { \
+				return std::make_unique<TBitmapAction<float   , CH>>(bmp); \
+			} break; \
+			case GL_UNSIGNED_SHORT: { \
+				return std::make_unique<TBitmapAction<uint16_t, CH>>(bmp); \
+			} break; \
+			case GL_UNSIGNED_BYTE : { \
+				return std::make_unique<TBitmapAction<uint8_t , CH>>(bmp); \
+			} break; \
+		} \
+	} \
+} while (0)
+
+std::unique_ptr<BitmapAction> BitmapAction::GetBitmapAction(CBitmap* bmp)
 {
-	return strcmp(ext, "hdr") == 0;
+	GET_BITMAP_ACTION_HELPER(4);
+	GET_BITMAP_ACTION_HELPER(3);
+	GET_BITMAP_ACTION_HELPER(2);
+	GET_BITMAP_ACTION_HELPER(1);
+
+	assert(false);
+	return nullptr;
 }
+
+#undef GET_BITMAP_ACTION_HELPER
+
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -296,15 +571,26 @@ CBitmap::~CBitmap()
 	texMemPool.Free(GetRawMem(), GetMemSize());
 }
 
+CBitmap::CBitmap()
+	: xsize(0)
+	, ysize(0)
+	, channels(4)
+	, dataType(0x1401)
+	, compressed(false)
+	, bitmapAction(nullptr)
+{
+	CreateBitmapAction();
+}
+
 CBitmap::CBitmap(const uint8_t* data, int _xsize, int _ysize, int _channels, uint32_t _dataType)
 	: xsize(_xsize)
 	, ysize(_ysize)
 	, channels(_channels)
 	, dataType(_dataType)
-	, dataTypeSize(0)
 	, compressed(false)
+	, bitmapAction(nullptr)
 {
-	UpdateDataTypeSize();
+	CreateBitmapAction();
 	assert(GetMemSize() > 0);
 	memIdx = texMemPool.AllocIdx(GetMemSize());
 
@@ -343,7 +629,7 @@ CBitmap& CBitmap::operator=(const CBitmap& bmp)
 		ysize = bmp.ysize;
 		channels = bmp.channels;
 		dataType = bmp.dataType;
-		dataTypeSize = bmp.dataTypeSize;
+
 		compressed = bmp.compressed;
 
 		#ifndef BITMAP_NO_OPENGL
@@ -351,6 +637,7 @@ CBitmap& CBitmap::operator=(const CBitmap& bmp)
 
 		ddsimage = bmp.ddsimage;
 		#endif
+		CreateBitmapAction();
 	}
 
 	assert(GetMemSize() == bmp.GetMemSize());
@@ -366,7 +653,8 @@ CBitmap& CBitmap::operator=(CBitmap&& bmp) noexcept
 		std::swap(ysize, bmp.ysize);
 		std::swap(channels, bmp.channels);
 		std::swap(dataType, bmp.dataType);
-		std::swap(dataTypeSize, bmp.dataTypeSize);
+		std::swap(bitmapAction, bmp.bitmapAction);
+		bitmapAction->SwapBmp(bmp.bitmapAction);
 		std::swap(compressed, bmp.compressed);
 
 		#ifndef BITMAP_NO_OPENGL
@@ -395,22 +683,9 @@ void CBitmap::InitPool(size_t size)
 const uint8_t* CBitmap::GetRawMem() const { return ((memIdx == size_t(-1))? nullptr: (texMemPool.Base() + memIdx)); }
       uint8_t* CBitmap::GetRawMem()       { return ((memIdx == size_t(-1))? nullptr: (texMemPool.Base() + memIdx)); }
 
-void CBitmap::UpdateDataTypeSize()
+void CBitmap::CreateBitmapAction()
 {
-	switch (dataType) {
-	case GL_FLOAT:
-		dataTypeSize = sizeof(float);
-	break;
-	case GL_UNSIGNED_SHORT:
-		dataTypeSize = sizeof(uint16_t);
-	break;
-	case GL_UNSIGNED_BYTE:
-		dataTypeSize = sizeof(uint8_t);
-	break;
-	default:
-		assert(false);
-		return;
-	}
+	bitmapAction = BitmapAction::GetBitmapAction(this);
 }
 
 int32_t CBitmap::GetIntFmt() const
@@ -439,13 +714,21 @@ int32_t CBitmap::GetExtFmt() const
 	return extFormats[channels];
 }
 
+size_t CBitmap::GetMemSize() const
+{
+	return (xsize * ysize * bitmapAction->GetPixelSize());
+}
 
-void CBitmap::Alloc(int w, int h, int c)
+void CBitmap::Alloc(int w, int h, int c, uint32_t dt)
 {
 	if (!Empty())
 		texMemPool.Free(GetRawMem(), GetMemSize());
 
-	memIdx = texMemPool.AllocIdx((xsize = w) * (ysize = h) * (channels = c));
+	xsize = w; ysize = h;
+	channels = c; dataType = dt;
+	CreateBitmapAction();
+
+	memIdx = texMemPool.AllocIdx(GetMemSize());
 	memset(GetRawMem(), 0, GetMemSize());
 }
 
@@ -571,7 +854,7 @@ bool CBitmap::Load(std::string const& filename, float defaultAlpha, int32_t reqN
 		else {
 			dataType = GL_UNSIGNED_BYTE;
 		}
-		UpdateDataTypeSize();
+		CreateBitmapAction();
 
 		assert(reqNumChannel <= 4);
 
@@ -643,9 +926,9 @@ bool CBitmap::Load(std::string const& filename, float defaultAlpha, int32_t reqN
 
 		for (int y = 0; y < ysize; ++y) {
 			for (int x = 0; x < xsize; ++x) {
-				mem += reqNumChannel * dataTypeSize;
-				memcpy(mem, &defAlpha.al[0], dataTypeSize);
-				mem += dataTypeSize;
+				mem += reqNumChannel * bitmapAction->GetPixelChannelSize();
+				memcpy(mem, &defAlpha.al[0], bitmapAction->GetPixelChannelSize());
+				mem += bitmapAction->GetPixelChannelSize();
 			}
 		}
 	}
@@ -1073,128 +1356,11 @@ void CBitmap::SetTransparent(const SColor& c, const SColor trans)
 	}
 }
 
-
-void CBitmap::Renormalize(float3 newCol)
-{
-	uint8_t* mem = GetRawMem();
-
-	float3 aCol;
-	float3 colorDif;
-
-	for (int a = 0; a < 3; ++a) {
-		int cCol = 0;
-		int numCounted = 0;
-		for (int y = 0; y < ysize; ++y) {
-			for (int x = 0; x < xsize; ++x) {
-				const uint32_t index = (y* xsize + x) * 4;
-				if (mem[index + 3] != 0) {
-					cCol += mem[index + a];
-					numCounted += 1;
-				}
-			}
-		}
-		aCol[a] = cCol / 255.0f / numCounted;
-		//cCol /= xsize*ysize; //??
-		colorDif[a] = newCol[a] - aCol[a];
-	}
-
-	for (int a = 0; a < 3; ++a) {
-		for (int y = 0; y < ysize; ++y) {
-			for (int x = 0; x < xsize; ++x) {
-				const uint32_t index = (y * xsize + x) * 4;
-				float nc = float(mem[index + a]) / 255.0f + colorDif[a];
-				mem[index + a] = (uint8_t) (std::min(255.f, std::max(0.0f, nc*255)));
-			}
-		}
-	}
-}
-
-
-inline static void kernelBlur(
-	uint8_t* dstMem,
-	const uint8_t* srcMem,
-	int xsize,
-	int ysize,
-	int nchannels,
-	int x,
-	int y,
-	int channel,
-	float weight
-) {
-	float fragment = 0.0f;
-
-	const int pos = (x + y * xsize) * nchannels + channel;
-
-	for (int i = 0; i < 9; ++i) {
-		int yoffset = (i                 / 3) - 1;
-		int xoffset = (i - (yoffset + 1) * 3) - 1;
-
-		const int tx = x + xoffset;
-		const int ty = y + yoffset;
-
-		xoffset *= ((tx >= 0) && (tx < xsize));
-		yoffset *= ((ty >= 0) && (ty < ysize));
-
-		const int offset = (yoffset * xsize + xoffset) * nchannels;
-
-		if (i == 4) {
-			fragment += (weight * blurkernel[i] * srcMem[pos + offset]);
-		} else {
-			fragment +=           blurkernel[i] * srcMem[pos + offset];
-		}
-	}
-
-	dstMem[pos] = static_cast<uint8_t>(Clamp(fragment, 0.0f, 255.0f));
-}
-
-
-void CBitmap::Blur(int iterations, float weight)
-{
-	if (compressed)
-		return;
-
-	CBitmap tmp(nullptr, xsize, ysize, channels);
-
-	CBitmap* src = this;
-	CBitmap* dst = &tmp;
-
-	for (int i = 0; i < iterations; ++i) {
-		const uint8_t* srcMem = src->GetRawMem();
-		      uint8_t* dstMem = dst->GetRawMem();
-
-		for_mt(0, ysize, [&](const int y) {
-			for (int x = 0; x < xsize; x++) {
-				for (int j = 0; j < channels; j++) {
-					kernelBlur(dstMem, srcMem, xsize, ysize, channels, x, y, j, weight);
-				}
-			}
-		});
-
-		std::swap(src, dst);
-	}
-
-	// if dst points to temporary, we are done
-	// otherwise need to perform one more swap
-	// (e.g. if iterations=1)
-	if (dst != this)
-		return;
-
-	std::swap(src, dst);
-}
-
-
-void CBitmap::Fill(const SColor& c)
-{
-	if (compressed)
-		return;
-
-	uint8_t* mem = GetRawMem();
-
-	for (size_t i = 0, n = GetMemSize() / channels; i < n; i++) {
-		memcpy(&mem[i * channels], &c.r, channels);
-	}
-}
-
+void CBitmap::Renormalize(const float3& newCol) { bitmapAction->Renormalize(newCol); }
+void CBitmap::Blur(int iterations, float weight) { bitmapAction->Blur(iterations, weight); }
+void CBitmap::Fill(const SColor& c) { bitmapAction->Fill(c); }
+void CBitmap::InvertColors() { bitmapAction->InvertColors(); }
+void CBitmap::InvertAlpha() { bitmapAction->InvertAlpha(); }
 
 void CBitmap::CopySubImage(const CBitmap& src, int xpos, int ypos)
 {
@@ -1212,11 +1378,11 @@ void CBitmap::CopySubImage(const CBitmap& src, int xpos, int ypos)
 	      uint8_t* dstMem =     GetRawMem();
 
 	for (int y = 0; y < src.ysize; ++y) {
-		const int pixelDst = (((ypos + y) *     xsize) + xpos) * channels;
-		const int pixelSrc = ((        y  * src.xsize) +    0) * channels;
+		const int pixelDst = (((ypos + y) *     xsize) + xpos) * bitmapAction->GetPixelSize();
+		const int pixelSrc = ((        y  * src.xsize) +    0) * bitmapAction->GetPixelSize();
 
 		// copy the whole line
-		std::copy(&srcMem[pixelSrc], &srcMem[pixelSrc] + channels * src.xsize, &dstMem[pixelDst]);
+		std::copy(&srcMem[pixelSrc], &srcMem[pixelSrc] + bitmapAction->GetPixelSize() * src.xsize, &dstMem[pixelDst]);
 	}
 }
 
@@ -1333,42 +1499,6 @@ CBitmap CBitmap::CreateRescaled(int newx, int newy) const
 	return bm;
 }
 
-
-void CBitmap::InvertColors()
-{
-	if (compressed)
-		return;
-
-	uint8_t* mem = GetRawMem();
-
-	for (int y = 0; y < ysize; ++y) {
-		for (int x = 0; x < xsize; ++x) {
-			const int base = ((y * xsize) + x) * 4;
-			mem[base + 0] = 0xFF - mem[base + 0];
-			mem[base + 1] = 0xFF - mem[base + 1];
-			mem[base + 2] = 0xFF - mem[base + 2];
-			// do not invert alpha
-		}
-	}
-}
-
-
-void CBitmap::InvertAlpha()
-{
-	if (compressed)
-		return; // Don't try to invert DDS
-
-	uint8_t* mem = GetRawMem();
-
-	for (int y = 0; y < ysize; ++y) {
-		for (int x = 0; x < xsize; ++x) {
-			const int base = ((y * xsize) + x) * 4;
-			mem[base + 3] = 0xFF - mem[base + 3];
-		}
-	}
-}
-
-
 void CBitmap::MakeGrayScale()
 {
 	if (compressed)
@@ -1421,21 +1551,170 @@ void CBitmap::ReverseYAxis()
 	if (compressed)
 		return; // don't try to flip DDS
 
-	const size_t chTypeSz = channels * dataTypeSize;
-
-	uint8_t* tmp = texMemPool.Alloc(xsize * chTypeSz);
+	uint8_t* tmp = texMemPool.Alloc(xsize * bitmapAction->GetPixelSize());
 	uint8_t* mem = GetRawMem();
 
 	for (int y = 0; y < (ysize / 2); ++y) {
-		const int pixelLow  = (((y            ) * xsize) + 0) * chTypeSz;
-		const int pixelHigh = (((ysize - 1 - y) * xsize) + 0) * chTypeSz;
+		const int pixelLo = (((y            ) * xsize) + 0) * bitmapAction->GetPixelSize();
+		const int pixelHi = (((ysize - 1 - y) * xsize) + 0) * bitmapAction->GetPixelSize();
 
 		// copy the whole line
-		std::copy(mem + pixelHigh, mem + pixelHigh + chTypeSz * xsize, tmp);
-		std::copy(mem + pixelLow , mem + pixelLow  + chTypeSz * xsize, mem + pixelHigh);
-		std::copy(tmp, tmp + chTypeSz * xsize, mem + pixelLow);
+		std::copy(mem + pixelHi, mem + pixelHi + bitmapAction->GetPixelSize() * xsize, tmp          );
+		std::copy(mem + pixelLo, mem + pixelLo + bitmapAction->GetPixelSize() * xsize, mem + pixelHi);
+		std::copy(tmp, tmp + bitmapAction->GetPixelSize() * xsize, mem + pixelLo);
 	}
 
-	texMemPool.Free(tmp, xsize * chTypeSz);
+	texMemPool.Free(tmp, xsize * bitmapAction->GetPixelSize());
 }
 
+template<typename T, uint32_t ch>
+void TBitmapAction<T, ch>::Renormalize(const float3& newCol)
+{
+	if (ch < 3) {
+		assert(false);
+		return;
+	}
+
+	float3 aCol;
+	float3 colorDif;
+
+	for (int a = 0; a < 3; ++a) {
+		AccumCT cCol = AccumCT{ 0 };
+		AccumCT numCounted = AccumCT{ 0 };
+		for (int y = 0; y < bmp->ysize; ++y) {
+			const uint32_t yOffset = (y * bmp->xsize);
+			for (int x = 0; x < bmp->xsize; ++x) {
+				auto& pixel = GetRef(yOffset + x);
+				if (pixel[3] != CT{ 0 }) {
+					cCol += pixel[a];
+					numCounted += AccumCT{ 1 };
+				}
+			}
+		}
+		aCol[a] = cCol / GetMaxLDRValue() / numCounted;
+		//cCol /= xsize*ysize; //??
+		colorDif[a] = newCol[a] - aCol[a];
+	}
+
+	for (int a = 0; a < 3; ++a) {
+		for (int y = 0; y < bmp->ysize; ++y) {
+			const uint32_t yOffset = (y * bmp->xsize);
+			for (int x = 0; x < bmp->xsize; ++x) {
+				auto& pixel = GetRef(yOffset + x);
+				const uint32_t index = (y * bmp->xsize + x) * 4;
+				float nc = static_cast<float>(pixel[a]) / static_cast<float>(GetMaxLDRValue()) + colorDif[a];
+				pixel[a] = static_cast<CT>(std::min(static_cast<float>(GetMaxLDRValue()), std::max(0.0f, nc * static_cast<float>(GetMaxLDRValue()))));
+			}
+		}
+	}
+}
+
+template<typename T, uint32_t ch>
+void TBitmapAction<T, ch>::Blur(int iterations, float weight)
+{
+	if (bmp->compressed)
+		return;
+
+	CBitmap tmp(nullptr, bmp->xsize, bmp->ysize, bmp->channels, bmp->dataType);
+
+	CBitmap* src =  bmp;
+	CBitmap* dst = &tmp;
+
+	for (int i = 0; i < iterations; ++i) {
+		auto srcTBA = &static_cast<TBitmapAction<T, ch>&>(*src->bitmapAction);
+		auto dstTBA = &static_cast<TBitmapAction<T, ch>&>(*dst->bitmapAction);
+		for_mt(0, src->ysize, [src, weight, &srcTBA, &dstTBA](const int y) {
+			const uint32_t yBaseOffset = (y * src->xsize);
+			for (int x = 0; x < src->xsize; x++) {
+				/////////////////////////////////////////
+
+				PT fragment{ 0 };
+
+
+
+				for (int i = 0; i < 9; ++i) {
+					int yoffset = (i / 3) - 1;
+					int xoffset = (i - (yoffset + 1) * 3) - 1;
+
+					const int tx = x + xoffset;
+					const int ty = y + yoffset;
+
+					xoffset *= ((tx >= 0) && (tx < src->xsize));
+					yoffset *= ((ty >= 0) && (ty < src->ysize));
+
+					const int offset = (yoffset * src->xsize + xoffset);
+
+					if (i == 4)
+						fragment += srcTBA->GetRef(yBaseOffset + x + offset) * weight * blurkernel[i];
+					else
+						fragment += srcTBA->GetRef(yBaseOffset + x + offset)          * blurkernel[i];
+				}
+
+				auto& dstPixel = dstTBA->GetRef(yBaseOffset + x);
+				for (auto& c : dstPixel) {
+					c = std::max(c, CT(0));
+				}
+
+				/////////////////////////////////////////
+			}
+		});
+
+		std::swap(*src, *dst);
+	}
+
+	// if dst points to temporary, we are done
+	// otherwise need to perform one more swap
+	// (e.g. if iterations=1)
+	if (dst != bmp)
+		return;
+
+	std::swap(*src, *dst);
+}
+
+template<typename T, uint32_t ch>
+void TBitmapAction<T, ch>::Fill(const SColor& c)
+{
+	if (bmp->compressed)
+		return;
+
+	const float4 fColor = c;
+	for (size_t i = 0; i < bmp->xsize * bmp->ysize; i++) {
+		auto pix = GetRef(i);
+		for (size_t chan = 0; chan < pix.size(); chan) {
+			pix[chan] = static_cast<CT>(fColor[chan] * GetMaxLDRValue());
+		}
+	}
+}
+
+template<typename T, uint32_t ch>
+void TBitmapAction<T, ch>::InvertColors()
+{
+	if (bmp->compressed)
+		return;
+
+	for (int y = 0; y < bmp->ysize; ++y) {
+		const uint32_t yBaseOffset = (y * bmp->xsize);
+		for (int x = 0; x < bmp->xsize; ++x) {
+			auto& pix = GetRef(yBaseOffset + x);
+			//do not invert alpha, thus pix.size() - 1
+			for (size_t chan = 0; chan < pix.size() - 1; chan) {
+				pix[chan] = GetMaxLDRValue() - std::clamp(pix[chan], CT{ 0 }, GetMaxLDRValue());
+			}
+		}
+	}
+}
+
+template<typename T, uint32_t ch>
+void TBitmapAction<T, ch>::InvertAlpha()
+{
+	if (bmp->compressed)
+		return;
+
+	for (int y = 0; y < bmp->ysize; ++y) {
+		const uint32_t yBaseOffset = (y * bmp->xsize);
+		for (int x = 0; x < bmp->xsize; ++x) {
+			auto& pix = GetRef(yBaseOffset + x);
+			*pix.rbegin() = GetMaxLDRValue() - std::clamp(*pix.rbegin(), CT{ 0 }, GetMaxLDRValue());
+		}
+	}
+}
