@@ -1,7 +1,7 @@
 FROM ubuntu:18.04 AS mxe
 
-ARG mxe_version=02852a7b690aa411ce2a2089deea25a7292a33d6
-ARG mxe_gcc=gcc11
+ARG mxe_version=build-2022-04-09
+ARG mxe_gcc=gcc12
 
 # Install MXE dependencies
 RUN apt-get update;apt-get install -y \
@@ -72,10 +72,10 @@ RUN apt-get update -y; \
         pip3 install cmake==$cmake_version; \
         apt purge python3-pip -y; apt auto-remove -y
 
-# GCC-10 PPA (linux-64)
+# GCC-11 PPA (linux-64)
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y; \
     apt update -y; \
-    apt install -y gcc-10 g++-10
+    apt install -y gcc-11 g++-11
 
 # Install Build Dependencies (linux-64)
 RUN apt-get install --fix-missing -y \
