@@ -1,7 +1,6 @@
 /* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
 
-#ifndef HEIGHT_MAP_TEXTURE_H
-#define HEIGHT_MAP_TEXTURE_H
+#pragma once
 
 #include "Rendering/GL/myGL.h"
 #include "Rendering/GL/PBO.h"
@@ -39,9 +38,10 @@ class HeightMapTexture : public CEventClient
 		int ySize = 0;
 
 		PBO pbos[3];
+
+		static constexpr GLint ExternalFormat = GL_RED;
+		static constexpr GLint InternalFormat = GL_R32F;
+		static constexpr GLint DataType = GL_FLOAT;
 };
 
 extern HeightMapTexture* heightMapTexture;
-
-#endif // HEIGHTMAP_TEXTURE_H
-

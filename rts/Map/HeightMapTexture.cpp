@@ -4,6 +4,7 @@
 
 #include "ReadMap.h"
 #include "Rendering/GlobalRendering.h"
+#include "Rendering/GL/TexBind.h"
 #include "System/EventHandler.h"
 #include "System/Rectangle.h"
 #include "System/TimeProfiler.h"
@@ -42,15 +43,14 @@ void HeightMapTexture::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	constexpr GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_RED };
-	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
-
-	static constexpr GLint InternalFormat = GL_R32F;
-	static constexpr GLint DataType = GL_FLOAT;
+	if constexpr (ExternalFormat == GL_RED) {
+		constexpr GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_RED };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat,
 		xSize, ySize, 0,
-		GL_RED, DataType, readMap->GetCornerHeightMapUnsynced());
+		ExternalFormat, DataType, readMap->GetCornerHeightMapUnsynced());
 
 	GLint allocWidth, allocHeight, allocIntFormat, allocRedType;
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &allocWidth);
@@ -58,7 +58,7 @@ void HeightMapTexture::Init()
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &allocIntFormat);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_RED_TYPE, &allocRedType);
 	if (std::tie(allocWidth, allocHeight, allocIntFormat, allocRedType) != std::make_tuple(xSize, ySize, InternalFormat, DataType)) {
-		LOG_L(L_ERROR, "Failed to allocate HeightMapTexture texture (w=%d, h=%d, if=%d, rt=%d)", allocWidth, allocHeight, allocIntFormat, allocRedType);
+		LOG_L(L_ERROR, "HeightMapTexture::Init(). Failed to allocate texture (w=%d, h=%d, if=%d, rt=%d)", allocWidth, allocHeight, allocIntFormat, allocRedType);
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -84,7 +84,7 @@ void HeightMapTexture::UnsyncedHeightMapUpdate(const SRectangle& rect)
 	if (texID == 0)
 		return;
 
-	SCOPED_TIMER("Update::HeightMapTexture");
+	SCOPED_TIMER("HeightMapTexture::UHMU");
 
 	// the upper bounds of UHM rectangles are clamped to
 	// map{x,y}; valid for indexing the corner heightmap
@@ -111,12 +111,21 @@ void HeightMapTexture::UnsyncedHeightMapUpdate(const SRectangle& rect)
 			memcpy(dst, src, sizeX * sizeof(float));
 		}
 	}
+	else {
+		LOG_L(L_ERROR, "HeightMapTexture::UHMU(). Failed to allocate heightBuf");
+	}
 
 	pbo.UnmapBuffer();
 
-	glBindTexture(GL_TEXTURE_2D, texID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,  rect.x1, rect.z1, sizeX, sizeZ,  GL_RED, GL_FLOAT, pbo.GetPtr());
+	if (heightBuf) {
+		auto texBind = GL::TexBind(GL_TEXTURE_2D, texID);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x1, rect.z1, sizeX, sizeZ, ExternalFormat, DataType, pbo.GetPtr());
+		if (auto err = glGetError(); err != GL_NO_ERROR) {
+			LOG_L(L_ERROR, "HeightMapTexture::UHMU(). Failed to update texture (err=%u)", err);
+		}
+	}
 
 	pbo.Invalidate();
 	pbo.Unbind();
+	//pbo.Release();
 }
