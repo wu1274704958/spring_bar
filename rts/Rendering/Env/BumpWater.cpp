@@ -313,13 +313,6 @@ void CBumpWater::InitResources(bool loadShader)
 
 
 	// CREATE TEXTURES
-	if ((refraction > 0) || depthCopy) {
-		// ATIs do not have GLSL support for texrects
-		if (!globalRendering->supportNonPowerOfTwoTex) {
-			screenTextureX = next_power_of_2(screenTextureX);
-			screenTextureY = next_power_of_2(screenTextureY);
-		}
-	}
 
 	if (refraction > 0) {
 		// CREATE REFRACTION TEXTURE

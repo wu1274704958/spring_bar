@@ -84,13 +84,11 @@ bool CRowAtlasAlloc::Allocate()
 {
 	bool success = true;
 
-	if (npot) {
-		// revert the used height clamping at the bottom of this function
-		// else for the case when Allocate() is called multiple times, the
-		// width would grow faster than height
-		// also AddRow() only works with PowerOfTwo values.
-		atlasSize.y = next_power_of_2(atlasSize.y);
-	}
+	// revert the used height clamping at the bottom of this function
+	// else for the case when Allocate() is called multiple times, the
+	// width would grow faster than height
+	// also AddRow() only works with PowerOfTwo values.
+	atlasSize.y = next_power_of_2(atlasSize.y);
 
 	// it gives much better results when we resize the available space before starting allocation
 	// esp. allocation is more horizontal and so we can clip more free space at bottom
@@ -127,11 +125,7 @@ bool CRowAtlasAlloc::Allocate()
 		row->width += (curtex->size.x + ATLAS_PADDING);
 	}
 
-	if (npot) {
-		atlasSize.y = nextRowPos;
-	} else {
-		atlasSize.y = next_power_of_2(nextRowPos);
-	}
+	atlasSize.y = nextRowPos;
 
 	return success;
 }

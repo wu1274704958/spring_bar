@@ -1567,14 +1567,6 @@ unsigned int CBitmap::CreateTexture(float aniso, float lodBias, bool mipmaps, ui
 	if (GetMemSize() == 0)
 		return 0;
 
-	// jcnossen: Some drivers return "2.0" as a version string,
-	// but switch to software rendering for non-power-of-two textures.
-	// GL_ARB_texture_non_power_of_two indicates that the hardware will actually support it.
-	if (!globalRendering->supportNonPowerOfTwoTex && (xsize != next_power_of_2(xsize) || ysize != next_power_of_2(ysize))) {
-		CBitmap bm = CreateRescaled(next_power_of_2(xsize), next_power_of_2(ysize));
-		return bm.CreateTexture(aniso, mipmaps);
-	}
-
 	if (texID == 0)
 		glGenTextures(1, &texID);
 

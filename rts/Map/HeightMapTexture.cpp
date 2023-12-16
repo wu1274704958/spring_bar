@@ -27,10 +27,6 @@ HeightMapTexture::~HeightMapTexture()
 
 void HeightMapTexture::Init()
 {
-	assert(readMap != nullptr);
-	if (!GLEW_ARB_texture_float || !GLEW_ARB_texture_non_power_of_two)
-		return;
-
 	// corner-heightmap dimensions
 	xSize = mapDims.mapxp1;
 	ySize = mapDims.mapyp1;

@@ -543,7 +543,6 @@ CFontTexture::CFontTexture(const std::string& fontfile, int size, int _outlinesi
 	, wantedTexWidth(0)
 	, wantedTexHeight(0)
 {
-	atlasAlloc.SetNonPowerOfTwo(globalRendering->supportNonPowerOfTwoTex);
 	atlasAlloc.SetMaxSize(globalRendering->maxTextureSize, globalRendering->maxTextureSize);
 
 	atlasGlyphs.reserve(1024);

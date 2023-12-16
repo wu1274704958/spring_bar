@@ -257,7 +257,7 @@ namespace CNamedTextures {
 				}
 
 				//! Note: NPOTs + nearest filtering seems broken on ATIs
-				if ((xbits != 1 || ybits != 1) && (!GLEW_ARB_texture_non_power_of_two || (globalRendering->amdHacks && nearest)))
+				if ((xbits != 1 || ybits != 1) && (globalRendering->amdHacks && nearest))
 					bitmap = bitmap.CreateRescaled(next_power_of_2(bitmap.xsize),next_power_of_2(bitmap.ysize));
 
 				glTexImage2D(GL_TEXTURE_2D, 0, bitmap.GetIntFmt(), bitmap.xsize, bitmap.ysize, int(border), bitmap.GetExtFmt(), bitmap.dataType, bitmap.GetRawMem());
@@ -266,7 +266,7 @@ namespace CNamedTextures {
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-				if ((xbits == 1 && ybits == 1) || GLEW_ARB_texture_non_power_of_two) {
+				if (xbits == 1 && ybits == 1) {
 					glBuildMipmaps(GL_TEXTURE_2D, bitmap.GetIntFmt(), bitmap.xsize, bitmap.ysize, bitmap.GetExtFmt(), bitmap.dataType, bitmap.GetRawMem());
 				} else {
 					//! glu auto resizes to next POT

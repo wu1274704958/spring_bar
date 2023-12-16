@@ -14,10 +14,7 @@ IInfoTextureHandler* infoTextureHandler = nullptr;
 
 void IInfoTextureHandler::Create()
 {
-	if (
-		globalRendering->supportNonPowerOfTwoTex &&
-		FBO::IsSupported()
-	) {
+	if (FBO::IsSupported()) {
 		try {
 			infoTextureHandler = new CInfoTextureHandler();
 		} catch (const opengl_error& glerr) {
