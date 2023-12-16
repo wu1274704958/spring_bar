@@ -27,6 +27,8 @@ HeightMapTexture::~HeightMapTexture()
 
 void HeightMapTexture::Init()
 {
+	assert(readMap != nullptr);
+
 	// corner-heightmap dimensions
 	xSize = mapDims.mapxp1;
 	ySize = mapDims.mapyp1;
@@ -43,9 +45,21 @@ void HeightMapTexture::Init()
 	constexpr GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_RED };
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F,
+	static constexpr GLint InternalFormat = GL_R32F;
+	static constexpr GLint DataType = GL_FLOAT;
+
+	glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat,
 		xSize, ySize, 0,
-		GL_RED, GL_FLOAT, readMap->GetCornerHeightMapUnsynced());
+		GL_RED, DataType, readMap->GetCornerHeightMapUnsynced());
+
+	GLint allocWidth, allocHeight, allocIntFormat, allocRedType;
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &allocWidth);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &allocHeight);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &allocIntFormat);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_RED_TYPE, &allocRedType);
+	if (std::tie(allocWidth, allocHeight, allocIntFormat, allocRedType) != std::make_tuple(xSize, ySize, InternalFormat, DataType)) {
+		LOG_L(L_ERROR, "Failed to allocate HeightMapTexture texture (w=%d, h=%d, if=%d, rt=%d)", allocWidth, allocHeight, allocIntFormat, allocRedType);
+	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
