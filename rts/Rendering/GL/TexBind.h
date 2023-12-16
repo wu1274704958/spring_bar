@@ -18,7 +18,9 @@ public:
 		target(target),
 		restoredTextureID(0)
 	{
-		if (stateTexUnit != texUnit) glActiveTexture(texUnit);
+		if (stateTexUnit != texUnit)
+			glActiveTexture(texUnit);
+
 		glBindTexture(target, textureID);
 	}
 	inline TexBind(GLenum target, GLuint textureID)
@@ -32,9 +34,13 @@ public:
 
 	inline ~TexBind()
 	{
-		glActiveTexture(texUnit);
+		if (stateTexUnit != texUnit)
+			glActiveTexture(texUnit);
+
 		glBindTexture(target, restoredTextureID);
-		if (stateTexUnit != texUnit) glActiveTexture(stateTexUnit);
+
+		if (stateTexUnit != texUnit)
+			glActiveTexture(stateTexUnit);
 	}
 
 private:
