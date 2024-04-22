@@ -317,7 +317,7 @@ void CWeaponProjectile::UpdateGroundBounce()
 	if (!weaponDef->groundBounce && !weaponDef->waterBounce)
 		return;
 	// maximum number of bounce already reached?
-	if ((bounces + 1) > weaponDef->numBounce)
+	if (bounces == weaponDef->numBounce)
 		return;
 	if (luaMoveCtrl)
 		return;
