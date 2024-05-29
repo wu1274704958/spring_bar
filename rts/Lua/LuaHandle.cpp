@@ -56,6 +56,12 @@
 #include <algorithm>
 #include <string>
 
+#ifdef ENABLE_LUA_PANDA
+#include "lib/LuaPanda/Debugger/debugger_lib/libpdebug.h"
+#include "System/FileSystem/FileHandler.h"
+#endif // ENABLE_LUA_PANDA
+
+
 
 CONFIG(float, LuaGarbageCollectionMemLoadMult).defaultValue(1.33f).minimumValue(1.0f).maximumValue(100.0f).description("How much the amount of Lua memory in use increases the rate of garbage collection.");
 CONFIG(float, LuaGarbageCollectionRunTimeMult).defaultValue(5.0f).minimumValue(1.0f).description("How many milliseconds the garbage collected can run for in each GC cycle");
@@ -3920,6 +3926,89 @@ int CLuaHandle::CallOutUpdateCallIn(lua_State* L)
 	lh->UpdateCallIn(L, name);
 	return 0;
 }
+
+
+#ifdef ENABLE_LUA_PANDA
+
+void CLuaHandle::InitLuaPandaDebug(lua_State* L)
+{
+	pdebug_init(L);
+
+	std::string code;
+	std::string filename = "LuaPanda.lua";
+	CFileHandler f(filename);
+
+	if (f.LoadStringData(code)) {
+		LoadCode(L, std::move(code), filename);
+	}
+	else {
+		LOG_L(L_ERROR, "Error loading %s", filename.c_str());
+	}
+}
+
+int traceback(lua_State *L)
+{
+	if (!lua_isstring(L, 1)) /* 'message' not a string? */
+		return 1;			 /* keep it intact */
+	lua_getfield(L, LUA_GLOBALSINDEX, "debug");
+	if (!lua_istable(L, -1))
+	{
+		lua_pop(L, 1);
+		return 1;
+	}
+	lua_getfield(L, -1, "traceback");
+	if (!lua_isfunction(L, -1))
+	{
+		lua_pop(L, 2);
+		return 1;
+	}
+	lua_pushvalue(L, 1);   /* pass error message */
+	lua_pushinteger(L, 2); /* skip this function and traceback */
+	lua_call(L, 2, 1);	   /* call debug.traceback */
+	LOG_L(L_ERROR, "lua traceback %s", lua_tostring(L, -1));
+	lua_pop(L, 1);
+	return 1;
+}
+
+int CLuaHandle::StartPandaDebugger(lua_State* L, const std::string& ip, int port, bool breakImmediately)
+{
+	lua_getglobal(L, "LuaPanda");
+	lua_pushstring(L, "start");
+	lua_gettable(L,-2);
+
+	lua_pushsstring(L,ip);
+	lua_pushinteger(L,port);
+
+	auto res = lua_pcall(L,2,1,0);
+	if (res != 0)
+	{
+		LOG_L(L_ERROR, "Error start panda debugger %s", lua_tostring(L, -1));
+		traceback(L);
+		lua_pop(L, 2);//err LuaPanda
+		return -1;
+	}
+	lua_pop(L, 1);//pop res
+
+	if (!breakImmediately)
+	{
+		lua_pop(L, 1);//pop LuaPanda
+		return 0;
+	}
+	lua_pushstring(L, "BP");
+	lua_gettable(L, -2);
+	res = lua_pcall(L, 0, 1, 0);
+	if (res != 0)
+	{
+		LOG_L(L_ERROR, "Error panda break failed %s", lua_tostring(L, -1));
+		traceback(L);
+		lua_pop(L, 2);//err LuaPanda
+		return -1;
+	}
+	lua_pop(L, 2);//pop res LuaPanda
+	return 0;
+}
+
+#endif
 
 
 /******************************************************************************/
