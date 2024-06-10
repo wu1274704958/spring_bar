@@ -29,7 +29,9 @@
 #include "System/FileSystem/FileSystem.h"
 #include "System/Threading/SpringThreading.h"
 #include "System/StringUtil.h"
-
+#ifdef ENABLE_LUA_PANDA
+#include "lib/luasocket/src/luasocket.h"
+#endif
 #include "System/Misc/TracyDefs.h"
 
 
@@ -57,6 +59,10 @@ CLuaIntro::CLuaIntro()
 	const std::string file = "LuaIntro/main.lua";
 	std::string code = LoadFile(file);
 
+#ifdef ENABLE_LUA_PANDA
+	const bool luaPandaDebug = configHandler->GetBool("LuaPandaDebug");
+#endif
+
 	if (code.empty()) {
 		KillLua();
 		return;
@@ -70,6 +76,14 @@ CLuaIntro::CLuaIntro()
 	LUA_OPEN_LIB(L, luaopen_table);
 	LUA_OPEN_LIB(L, luaopen_string);
 	LUA_OPEN_LIB(L, luaopen_debug);
+
+#ifdef ENABLE_LUA_PANDA
+	if (luaPandaDebug)
+	{
+		InitLuaSocket(L);
+		InitLuaPandaDebug(L);
+	}
+#endif
 
 	// setup the lua IO access check functions
 	lua_set_fopen(L, LuaIO::fopen);
@@ -124,6 +138,16 @@ CLuaIntro::CLuaIntro()
 
 	RemoveSomeOpenGLFunctions(L);
 
+	#ifdef ENABLE_LUA_PANDA
+	if (luaPandaDebug)
+	{
+		const std::string ip = configHandler->GetStringSafe("LuaPandaDebugIp","127.0.0.1");
+		const int port = configHandler->GetIntSafe("LuaPandaDebugPort", 8818);
+		const bool breakImmediately = configHandler->GetBoolSafe("LuaPandaDebugBreakImmediately",false);
+		StartPandaDebugger(L,ip, port, breakImmediately);
+	}
+	#endif
+
 	lua_settop(L, 0);
 	if (!LoadCode(L, std::move(code), file)) {
 		KillLua();
@@ -134,6 +158,21 @@ CLuaIntro::CLuaIntro()
 
 	// register for call-ins
 	eventHandler.AddClient(this);
+}
+
+void CLuaIntro::InitLuaSocket(lua_State* L) {
+	RECOIL_DETAILED_TRACY_ZONE;
+	std::string code;
+	std::string filename = "socket.lua";
+	CFileHandler f(filename);
+
+	LUA_OPEN_LIB(L, luaopen_socket_core);
+
+	if (f.LoadStringData(code)) {
+		LoadCode(L, std::move(code), filename);
+	} else {
+		LOG_L(L_ERROR, "Error loading %s", filename.c_str());
+	}
 }
 
 

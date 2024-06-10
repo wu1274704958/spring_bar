@@ -58,7 +58,11 @@ CLuaMenu::CLuaMenu()
 	queuedAction = ACTION_NOVALUE;
 
 	const bool luaSocketEnabled = configHandler->GetBool("LuaSocketEnabled");
+#ifdef ENABLE_LUA_PANDA
 	const bool luaPandaDebug = configHandler->GetBool("LuaPandaDebug");
+#else
+	const bool luaPandaDebug = false;
+#endif
 	const std::string file = "LuaMenu/main.lua";
 	std::string code = LoadFile(file);
 
