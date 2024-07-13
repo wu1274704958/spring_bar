@@ -58,6 +58,9 @@ SolidObjectDef::SolidObjectDef()
 	, upright(false)
 	, reclaimable(true)
 
+    , scales(OnesVector)
+    , worldOffset(ZeroVector)
+
 	, model(nullptr)
 {
 }

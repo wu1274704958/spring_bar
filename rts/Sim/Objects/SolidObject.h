@@ -166,7 +166,7 @@ public:
 	void UpdateDirVectors(bool useGroundNormal, bool useObjectNormal, float dirSmoothing);
 	void UpdateDirVectors(const float3& uDir);
 
-	CMatrix44f ComposeMatrix(const float3& p) const { return (CMatrix44f(p, -rightdir, updir, frontdir)); }
+	CMatrix44f ComposeMatrix(const float3& p) const { return (CMatrix44f(p + worldOffset, -rightdir, updir, frontdir)); }
 	virtual CMatrix44f GetTransformMatrix(bool synced = false, bool fullread = false) const { return CMatrix44f(); };
 
 	const CollisionVolume* GetCollisionVolume(const LocalModelPiece* lmp) const {
@@ -214,7 +214,7 @@ public:
 
 	// these transform a point or vector to object-space
 	float3 GetObjectSpaceVec(const float3& v) const { return (      (frontdir * v.z) + (rightdir * v.x) + (updir * v.y)); }
-	float3 GetObjectSpacePos(const float3& p) const { return (pos + (frontdir * p.z) + (rightdir * p.x) + (updir * p.y)); }
+	float3 GetObjectSpacePos(const float3& p) const { return (pos + worldOffset + (frontdir * p.z) + (rightdir * p.x) + (updir * p.y)); }
 
 	// note: requires drawPos to have been set first
 	float3 GetObjectSpaceDrawPos(const float3& p) const { return (drawPos + GetObjectSpaceVec(p)); }
@@ -292,6 +292,7 @@ public:
 	void UpdateVoidState(bool set);
 
 	virtual void SetMass(float newMass);
+    virtual void SetScale(float3 scale);
 
 private:
 	void SetMidPos(const float3& mp, bool relative) {
@@ -413,6 +414,8 @@ public:
 	float3 drawMidPos;
 
 	bool objectUsable = true;
+
+    float3 worldOffset = ZeroVector;
 
 	/**
 	 * @brief mod controlled parameters

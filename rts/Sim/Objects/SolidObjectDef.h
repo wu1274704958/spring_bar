@@ -77,6 +77,9 @@ public:
 
 	SolidObjectDecalDef decalDef;
 
+    float3 scales;
+    float3 worldOffset;
+
 	std::string name;      // eg. "arm_flash"
 	std::string modelName; // eg. "arm_flash.3do" (no path prefix)
 

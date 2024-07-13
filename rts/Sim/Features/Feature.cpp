@@ -202,13 +202,18 @@ void CFeature::Initialize(const FeatureLoadParams& params)
 
 		case DRAWTYPE_MODEL: {
 			if ((model = def->LoadModel()) != nullptr) {
-				SetMidAndAimPos(model->relMidPos, model->relMidPos, true);
-				SetRadiusAndHeight(model);
 
 				// only initialize the LM for modelled features
 				// (this is still never animated but allows for
 				// custom piece display-lists, etc)
 				localModel.SetModel(model);
+
+                worldOffset = def->worldOffset;
+                if(!def->scales.same(OnesVector))
+                    SetScale(def->scales);
+
+                SetMidAndAimPos(model->relMidPos, model->relMidPos, true);
+                SetRadiusAndHeight(model);
 			} else {
 				LOG_L(L_ERROR, "[%s] couldn't load model for %s", __FUNCTION__, def->name.c_str());
 			}

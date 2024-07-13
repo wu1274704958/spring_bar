@@ -169,3 +169,7 @@ Spring.VC.VC.opendb
 toolchain
 compile_commands.json
 build-*
+/cache/**
+/docker-build/cache/**
+/cmake-build-*/**
+/.idea/**

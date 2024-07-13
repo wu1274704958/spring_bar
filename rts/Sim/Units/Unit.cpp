@@ -234,6 +234,9 @@ void CUnit::PreInit(const UnitLoadParams& params)
 	collisionVolume = unitDef->collisionVolume;
 	selectionVolume = unitDef->selectionVolume;
 
+    worldOffset = unitDef->worldOffset;
+    if(!unitDef->scales.same(OnesVector))
+        SetScale(unitDef->scales);
 	// specialize defaults if non-custom sphere or footprint-box
 	collisionVolume.InitDefault(float4(model->radius, model->height,  xsize * SQUARE_SIZE, zsize * SQUARE_SIZE));
 	selectionVolume.InitDefault(float4(model->radius, model->height,  xsize * SQUARE_SIZE, zsize * SQUARE_SIZE));

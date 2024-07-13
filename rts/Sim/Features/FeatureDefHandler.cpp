@@ -145,6 +145,9 @@ FeatureDef* CFeatureDefHandler::CreateFeatureDef(const LuaTable& fdTable, const 
 	const float maxMass = CSolidObject::MAXIMUM_MASS;
 	const float defMass = (fd.cost.metal * 0.4f) + (fd.health * 0.1f);
 
+    fd.scales = fdTable.GetFloat3("scales", OnesVector);
+    fd.worldOffset = fdTable.GetFloat3("worldOffset",ZeroVector);
+
 	fd.mass = std::clamp(fdTable.GetFloat("mass", defMass), minMass, maxMass);
 	fd.crushResistance = fdTable.GetFloat("crushResistance", fd.mass);
 

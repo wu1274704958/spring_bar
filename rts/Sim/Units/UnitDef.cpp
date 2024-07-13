@@ -548,6 +548,9 @@ UnitDef::UnitDef(const LuaTable& udTable, const std::string& unitName, int id)
 	maxElevator = udTable.GetFloat("maxElevator", 0.01f);  // turn speed around pitch axis
 	maxRudder   = udTable.GetFloat("maxRudder",   0.004f); // turn speed around yaw axis
 
+    scales = udTable.GetFloat3("scales", OnesVector);
+    worldOffset = udTable.GetFloat3("worldOffset",ZeroVector);
+
 	maxThisUnit = udTable.GetInt("maxThisUnit", udTable.GetInt("unitRestricted", MAX_UNITS));
 	maxThisUnit = std::min(maxThisUnit, gameSetup->GetRestrictedUnitLimit(name, MAX_UNITS));
 

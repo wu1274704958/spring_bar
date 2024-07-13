@@ -352,6 +352,7 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(SetExperienceGrade);
 
 	REGISTER_LUA_CFUNC(SetRadarErrorParams);
+	REGISTER_LUA_CFUNC(SetUnitScale);
 
 	if (!LuaSyncedMoveCtrl::PushMoveCtrl(L))
 		return false;
@@ -665,6 +666,26 @@ static int SetWorldObjectVelocity(lua_State* L, CWorldObject* o)
 	speed.z = std::clamp(luaL_checkfloat(L, 4), -MAX_UNIT_SPEED, MAX_UNIT_SPEED);
 
 	o->SetVelocityAndSpeed(speed);
+	return 0;
+}
+
+static int SetSolidObjectScale(lua_State* L,CSolidObject* o)
+{
+	if (o == nullptr)
+		return 0;
+
+	float3 scale;
+    float3 worldOffset = ZeroVector;
+	scale.x = luaL_checkfloat(L, 2);
+	scale.y = luaL_checkfloat(L, 3);
+	scale.z = luaL_checkfloat(L, 4);
+
+    worldOffset.x = luaL_optfloat(L, 5, 0.0f);
+    worldOffset.y = luaL_optfloat(L, 6, 0.0f);
+    worldOffset.z = luaL_optfloat(L, 7, 0.0f);
+
+	o->SetScale(scale);
+    o->worldOffset = worldOffset;
 	return 0;
 }
 
@@ -3781,6 +3802,19 @@ int LuaSyncedCtrl::SetUnitHeadingAndUpDir(lua_State* L)
 int LuaSyncedCtrl::SetUnitVelocity(lua_State* L)
 {
 	return (SetWorldObjectVelocity(L, ParseUnit(L, __func__, 1)));
+}
+
+/***
+ * @function Spring.SetUnitVelocity
+ * @number unitID
+ * @number scaleX
+ * @number scaleY
+ * @number scaleZ
+ * @treturn nil
+ */
+int LuaSyncedCtrl::SetUnitScale(lua_State* L)
+{
+	return (SetSolidObjectScale(L, ParseUnit(L, __func__, 1)));
 }
 
 
