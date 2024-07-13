@@ -445,8 +445,8 @@ void CSolidObject::SetScale(float3 scale) {
 
     assert(!localModel.pieces.empty());
 
-    auto rootPiece = const_cast<S3DModelPiece*>(localModel.GetRoot()->original);
-    rootPiece->scales = scale;
+    localModel.pieces[0].SetScales(scale);
+
     for(int i = 0;i < localModel.pieces.size();++i)
     {
         localModel.pieces[i].SetDirty();

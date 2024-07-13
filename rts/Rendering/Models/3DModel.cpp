@@ -447,7 +447,9 @@ LocalModelPiece::LocalModelPiece(const S3DModelPiece* piece)
 	pos = piece->offset;
 	dir = piece->GetEmitDir(); // warning investigated, seems fake
 
-	pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, original->scales);
+    scales = piece->scales;
+
+	pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, scales);
 
 	children.reserve(piece->children.size());
 }
@@ -492,7 +494,7 @@ void LocalModelPiece::UpdateChildMatricesRec(bool updateChildMatrices) const
 		dirty = false;
 		updateChildMatrices = true;
 
-		pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, original->scales);
+		pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, scales);
 	}
 
 	if (updateChildMatrices) {
@@ -516,7 +518,7 @@ void LocalModelPiece::UpdateParentMatricesRec() const
 
 	dirty = false;
 
-	pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, original->scales);
+	pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, scales);
 	modelSpaceMat = pieceSpaceMat;
 
 	if (parent != nullptr)

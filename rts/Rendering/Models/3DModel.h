@@ -518,10 +518,14 @@ struct LocalModelPiece
 
 	bool GetScriptVisible() const { return scriptSetVisible; }
 	void SetScriptVisible(bool b) { scriptSetVisible = b; SetGetCustomDirty(true); }
+
+    const float3& GetScales() const { return scales;}
+    void SetScales(float3 scales) { this->scales = scales; }
 private:
 	float3 pos; // translation relative to parent LMP, *INITIALLY* equal to original->offset
 	float3 rot; // orientation relative to parent LMP, in radians (updated by scripts)
 	float3 dir; // cached copy of original->GetEmitDir()
+    float3 scales = OnesVector;
 
 	mutable CMatrix44f pieceSpaceMat; // transform relative to parent LMP (SYNCED), combines <pos> and <rot>
 	mutable CMatrix44f modelSpaceMat; // transform relative to root LMP (SYNCED), chained pieceSpaceMat's
