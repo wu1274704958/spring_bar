@@ -20,10 +20,11 @@ bool CCommCentral::Init(const std::string& memKey, uint32_t size)
 	return false;
 }
 
-void CCommCentral::tick()
+bool CCommCentral::tick()
 {
 	if (IsInit())
-		comm->tick();
+		return comm->tick();
+	return false;
 }
 
 std::optional<std::string> CCommCentral::PopMsg()

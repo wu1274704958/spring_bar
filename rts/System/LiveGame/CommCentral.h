@@ -21,7 +21,7 @@ public:
 
 
 	bool Init(const std::string& memKey, uint32_t size);
-	void tick();
+	bool tick();
 	std::optional<std::string> PopMsg();
 	bool HasMsg();
 	void SendMsg(const std::string& msg);
