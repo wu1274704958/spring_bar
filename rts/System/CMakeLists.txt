@@ -219,3 +219,13 @@ endif  ()
 
 add_subdirectory(FileSystem)
 add_subdirectory(Net)
+
+if(ENABLE_LIVE_GAME)
+	if(WIN32)
+		make_global_var(sources_engine_System
+				${sources_engine_System}
+				"${CMAKE_CURRENT_SOURCE_DIR}/LiveGame/CommCentral.cpp"
+				"${CMAKE_CURRENT_SOURCE_DIR}/LiveGame/LuaCommCentral.cpp"
+		)
+	endif()
+endif()

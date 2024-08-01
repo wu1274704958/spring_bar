@@ -13,6 +13,9 @@ project(Spring)
 if (ENABLE_LUA_PANDA)
 	add_definitions(-DENABLE_LUA_PANDA)
 endif()
+if (ENABLE_LIVE_GAME)
+	add_definitions(-DENABLE_LIVE_GAME)
+endif()
 add_definitions(-DFMT_HEADER_ONLY) #for fmt lib
 
 option(INSTALL_PORTABLE "Make a portable installation (instead of regular system installation)" FALSE)
