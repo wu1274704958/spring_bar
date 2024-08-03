@@ -47,8 +47,10 @@ namespace eqd {
 			if (send_id == 0) return LMC_state::Uninit;
 			if (ptr[2] == ST_IDLE && ptr[3] == 0)
 				return LMC_state::Idle;
-			if (ptr[2] == send_id || last_recv_msg_id == ptr[1])
-			{	
+			if (ptr[2] == send_id)
+				return LMC_state::Busy;
+			if (last_recv_msg_id == ptr[1])
+			{
 				//readed count > sum - 1 can clear 
 				if (ptr[3] >= ptr[0] - 1)
 					set_idle(ptr, size);

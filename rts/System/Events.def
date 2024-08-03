@@ -235,7 +235,7 @@
 
 #ifdef ENABLE_LIVE_GAME
 	// Live Game
-	SETUP_EVENT(OnRecvLocalMsg, MANAGED_BIT | UNSYNCED_BIT)
+	SETUP_EVENT(OnRecvLocalMsg, MANAGED_BIT | CONTROL_BIT)
 #endif
 
 #ifndef SETUP_EVENT

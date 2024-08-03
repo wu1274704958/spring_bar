@@ -37,7 +37,7 @@ int LuaCommCentral::SendLocalMemMsg(lua_State* L)
     if(!commCentral.IsInit())
         return 0;
 	if (lua_istable(L, -1)) {
-        commCentral.SendMsg(LuaTable2JsonStr(L,-1));
+        commCentral.SendMsg(LuaTable2JsonStr(L,1));
 	}
 	else {
 		LOG_L(L_ERROR,"Error: LuaCommCentral::Send Expected a table on the Lua stack.");
@@ -52,9 +52,9 @@ void LuaCommCentral::Tick()
         if (commCentral.tick())
         {
             auto msg = commCentral.PopMsg();
-            if (msg)
+            if (msg.has_value())
             {
-                eventHandler.OnRecvLocalMsg(*msg);
+                eventHandler.OnRecvLocalMsg(std::move(*msg));
             }
         }
     }
@@ -137,9 +137,9 @@ bool LuaCommCentral::Str2LuaTableAndPush(lua_State* L, const std::string& msg)
 
 void LuaCommCentral::JsonToLuaTable(lua_State* L, const Json::Value& value)
 {
-    lua_newtable(L);
-
+    
     if (value.isObject()) {
+        lua_newtable(L);
         for (const std::string& key : value.getMemberNames()) {
             lua_pushstring(L, key.c_str());  
             JsonToLuaTable(L, value[key]);   
@@ -147,8 +147,9 @@ void LuaCommCentral::JsonToLuaTable(lua_State* L, const Json::Value& value)
         }
     }
     else if (value.isArray()) {
+        lua_newtable(L);
         for (Json::ArrayIndex i = 0; i < value.size(); ++i) {
-            lua_pushnumber(L, i + 1);       
+            lua_pushnumber(L, i);       
             JsonToLuaTable(L, value[i]);    
             lua_settable(L, -3);            
         }
