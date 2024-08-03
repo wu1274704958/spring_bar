@@ -369,6 +369,11 @@ class CEventClient
 		virtual void DbgTimingInfo(DbgTimingInfoType type, const spring_time start, const spring_time end) {}
 		virtual void Pong(uint8_t pingTag, const spring_time pktSendTime, const spring_time pktRecvTime) {}
 		virtual void MetalMapChanged(const int x, const int z) {}
+
+#ifdef ENABLE_LIVE_GAME
+		virtual void OnRecvLocalMsg(const std::string& msg) {}
+#endif
+
 		/// @}
 };
 

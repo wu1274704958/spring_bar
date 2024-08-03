@@ -1,7 +1,5 @@
 #include "local_mem_adapter.h"
-#include "common.h"
-
-#if WIN32
+#ifdef _WIN32
 
 
 bool eqd::win_local_mem_adapter::init(const std::string& mem_id, uint32_t size)

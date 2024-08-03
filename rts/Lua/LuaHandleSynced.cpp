@@ -52,6 +52,10 @@
 #include "System/LoadLock.h"
 
 #include "System/Misc/TracyDefs.h"
+#ifdef ENABLE_LIVE_GAME
+#include "System/LiveGame/LuaCommCentral.h"
+#endif // ENABLE_LIVE_GAME
+
 
 
 LuaRulesParams::Params  CSplitLuaHandle::gameParams;
@@ -140,6 +144,9 @@ bool CUnsyncedLuaHandle::Init(std::string code, const std::string& file)
 		if (!AddEntriesToTable(L, "CMD",              LuaConstCMD::PushEntries        )) KILL
 		if (!AddEntriesToTable(L, "CMDTYPE",      LuaConstCMDTYPE::PushEntries        )) KILL
 		if (!AddEntriesToTable(L, "LOG",                 LuaUtils::PushLogEntries     )) KILL
+#ifdef ENABLE_LIVE_GAME
+		if (!AddEntriesToTable(L, "Spring",			LuaCommCentral::PushEntries)) KILL
+#endif
 		#undef KILL
 	}
 
@@ -520,6 +527,9 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 		if (!AddEntriesToTable(L, "COB",              LuaConstCOB::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "SFX",              LuaConstSFX::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "LOG",                 LuaUtils::PushLogEntries   )) KILL
+#ifdef ENABLE_LIVE_GAME
+		if (!AddEntriesToTable(L, "Spring",			LuaCommCentral::PushEntries)) KILL
+#endif
 		#undef KILL
 	}
 

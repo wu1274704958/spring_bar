@@ -642,6 +642,13 @@ void CEventHandler::Pong(uint8_t pingTag, const spring_time pktSendTime, const s
 	ITERATE_EVENTCLIENTLIST(Pong, pingTag, pktSendTime, pktRecvTime);
 }
 
+#ifdef ENABLE_LIVE_GAME
+void CEventHandler::OnRecvLocalMsg(const std::string& msg)
+{
+	ZoneScoped;
+	ITERATE_EVENTCLIENTLIST(OnRecvLocalMsg, msg);
+}
+#endif
 
 void CEventHandler::Update()
 {

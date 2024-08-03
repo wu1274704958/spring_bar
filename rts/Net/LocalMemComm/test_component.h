@@ -2,6 +2,7 @@
 #include <numeric>
 #include <vector>
 #include <string>
+#include <cstdint>
 
 class DefChecksum {
 public:

@@ -204,6 +204,9 @@ CALLIN_LIST = {
 	"DownloadFinished",
 	"DownloadFailed",
 	"DownloadProgress",
+
+	-- Live Game
+	"OnRecvLocalMsg"
 }
 
 for callinIdx, callinName in ipairs(CALLIN_LIST) do

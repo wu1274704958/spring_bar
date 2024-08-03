@@ -3,10 +3,20 @@
 #include "System/Log/ILog.h"
 #include <json/writer.h>
 #include <json/json.h>
+#include <System/EventHandler.h>
 
 CCommCentral commCentral;
 
-int LuaCommCentral::Init(lua_State* L)
+bool LuaCommCentral::PushEntries(lua_State* L)
+{
+    RECOIL_DETAILED_TRACY_ZONE;
+    REGISTER_LUA_CFUNC(InitLMCommCentral);
+    REGISTER_LUA_CFUNC(ReleaseLMCommCentral);
+    REGISTER_LUA_CFUNC(SendLocalMemMsg);
+    return true;
+}
+
+int LuaCommCentral::InitLMCommCentral(lua_State* L)
 {
 	auto memKey = luaL_checkstring(L, 1);
 	auto size = luaL_checkinteger(L, 2);
@@ -16,16 +26,16 @@ int LuaCommCentral::Init(lua_State* L)
 	return 1;
 }
 
-int LuaCommCentral::Release(lua_State* L)
+int LuaCommCentral::ReleaseLMCommCentral(lua_State* L)
 {
 	commCentral.Destroy();
 	return 0;
 }
 
-int LuaCommCentral::Send(lua_State* L)
+int LuaCommCentral::SendLocalMemMsg(lua_State* L)
 {
     if(!commCentral.IsInit())
-        return;
+        return 0;
 	if (lua_istable(L, -1)) {
         commCentral.SendMsg(LuaTable2JsonStr(L,-1));
 	}
@@ -44,7 +54,7 @@ void LuaCommCentral::Tick()
             auto msg = commCentral.PopMsg();
             if (msg)
             {
-                
+                eventHandler.OnRecvLocalMsg(*msg);
             }
         }
     }
@@ -108,4 +118,58 @@ std::string LuaCommCentral::LuaTable2JsonStr(lua_State* L, int index)
     auto obj = LuaTable2JsonObj(L,index);
     Json::FastWriter write;
 	return write.write(obj);
+}
+
+bool LuaCommCentral::Str2LuaTableAndPush(lua_State* L, const std::string& msg)
+{
+    Json::CharReaderBuilder readerBuilder;
+    Json::Value root;
+    std::string errors;
+
+    std::unique_ptr<Json::CharReader> reader(readerBuilder.newCharReader());
+    if (!reader->parse(msg.c_str(), msg.c_str() + msg.size(), &root, &errors)) {
+        LOG_L(L_WARNING, "Parse local comm recv msg. Error msg = %s", errors.c_str());
+        return false;
+    }
+    JsonToLuaTable(L, root);
+    return true;
+}
+
+void LuaCommCentral::JsonToLuaTable(lua_State* L, const Json::Value& value)
+{
+    lua_newtable(L);
+
+    if (value.isObject()) {
+        for (const std::string& key : value.getMemberNames()) {
+            lua_pushstring(L, key.c_str());  
+            JsonToLuaTable(L, value[key]);   
+            lua_settable(L, -3);             
+        }
+    }
+    else if (value.isArray()) {
+        for (Json::ArrayIndex i = 0; i < value.size(); ++i) {
+            lua_pushnumber(L, i + 1);       
+            JsonToLuaTable(L, value[i]);    
+            lua_settable(L, -3);            
+        }
+    }
+    
+    else if (value.isString()) {
+        lua_pushstring(L, value.asCString());
+    }
+    else if (value.isBool()) {
+        lua_pushboolean(L, value.asBool());
+    }
+    else if (value.isInt()) {
+        lua_pushinteger(L, value.asInt());
+    }
+    else if (value.isUInt()) {
+        lua_pushinteger(L, value.asUInt());
+    }
+    else if (value.isDouble()) {
+        lua_pushnumber(L, value.asDouble());
+    }
+    else {
+        lua_pushnil(L);  
+    }
 }

@@ -2187,6 +2187,16 @@ function gadgetHandler:Pong(pingTag, pktSendTime, pktRecvTime)
 end
 
 --------------------------------------------------------------------------------
+--- LiveGame
+-----------------------------------------------------------------------------------
+
+function gadgetHandler:OnRecvLocalMsg(msg)
+  for _,g in r_ipairs(self.OnRecvLocalMsgList) do
+    g:OnRecvLocalMsg(msg)
+  end
+end
+
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
 gadgetHandler:Initialize()

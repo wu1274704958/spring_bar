@@ -2829,6 +2829,28 @@ void CLuaHandle::Pong(uint8_t pingTag, const spring_time pktSendTime, const spri
 	RunCallIn(L, cmdStr, 3, 0);
 }
 
+#ifdef ENABLE_LIVE_GAME
+#include "System/LiveGame/LuaCommCentral.h"
+
+void CLuaHandle::OnRecvLocalMsg(const std::string& msg)
+{
+	RECOIL_DETAILED_TRACY_ZONE;
+	LUA_CALL_IN_CHECK(L);
+	luaL_checkstack(L, 5, __func__);
+	static const LuaHashString cmdStr(__func__);
+	if (!cmdStr.GetGlobalFunc(L))
+		return;
+
+	if (!LuaCommCentral::Str2LuaTableAndPush(L, msg))
+	{
+		lua_pop(L, 1);
+		LOG_L(L_WARNING, "OnRecvLocalMsg msg to table failed! msg = %s",msg.c_str());
+		return;
+	}
+
+	RunCallIn(L, cmdStr, 1, 0);
+}
+#endif
 
 /*** Called when the keymap changes
  *

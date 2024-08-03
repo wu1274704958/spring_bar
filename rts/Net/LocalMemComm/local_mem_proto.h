@@ -6,6 +6,7 @@
 #include <numeric>
 #include <functional>
 //#include <iostream>
+#include <cstring> 
 
 namespace eqd {
 
@@ -78,7 +79,7 @@ namespace eqd {
 		const std::string& last_error() { return _last_error; }
 		LMC_state set_idle(uint8_t* ptr, uint32_t size)
 		{
-			memset(ptr + ClearMsgOffset, 0, size - ClearMsgOffset);
+			std::memset(ptr + ClearMsgOffset, 0, size - ClearMsgOffset);
 			return LMC_state::Success;
 		}
 		LMC_state sign(uint8_t* ptr, uint32_t size)

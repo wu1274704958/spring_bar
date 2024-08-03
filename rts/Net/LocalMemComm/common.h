@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <string>
 #include <cstdarg>
+#include <cstdint>
 
 
 namespace eqd {

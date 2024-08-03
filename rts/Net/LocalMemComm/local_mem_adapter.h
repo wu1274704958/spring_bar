@@ -2,9 +2,10 @@
 
 #include <numeric>
 #include <string>
+#include "common.h"
 
-#if WIN32
-#include <Windows.h>
+#ifdef _WIN32
+#include <windows.h>
 namespace eqd {
 
 	class win_local_mem_adapter {

@@ -10,6 +10,8 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE "${CMAKE_MODULES_SPRING}/OverrideFlags.cmake"
 
 project(Spring)
 
+set(CMAKE_CXX_STANDARD 20)  
+
 if (ENABLE_LUA_PANDA)
 	add_definitions(-DENABLE_LUA_PANDA)
 endif()

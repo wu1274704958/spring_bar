@@ -1,4 +1,4 @@
-#if ENABLE_LIVE_GAME
+#ifdef ENABLE_LIVE_GAME
 #include "CommCentral.h"
 #include "System/Log/ILog.h"
 

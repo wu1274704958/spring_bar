@@ -273,6 +273,9 @@ class CLuaHandle : public CEventClient
 		void Pong(uint8_t pingTag, const spring_time pktSendTime, const spring_time pktRecvTime) override;
 
 		//FIXME void MetalMapChanged(const int x, const int z);
+#ifdef ENABLE_LIVE_GAME
+		void OnRecvLocalMsg(const std::string& msg) override;
+#endif
 
 		void CollectGarbage(bool forced) override;
 

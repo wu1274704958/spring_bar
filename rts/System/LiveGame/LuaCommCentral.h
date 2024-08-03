@@ -8,12 +8,17 @@ extern CCommCentral commCentral;
 
 class LuaCommCentral {
 public:
-	static int Init(lua_State* L);
-	static int Release(lua_State* L);
-	static int Send(lua_State* L);
+	static bool PushEntries(lua_State* L);
+
+	static int InitLMCommCentral(lua_State* L);
+	static int ReleaseLMCommCentral(lua_State* L);
+	static int SendLocalMemMsg(lua_State* L);
 
 	static void Tick();
 
 	static Json::Value LuaTable2JsonObj(lua_State* L, int index);
 	static std::string LuaTable2JsonStr(lua_State* L, int index);
+
+	static bool Str2LuaTableAndPush(lua_State* L, const std::string& msg);
+	static void JsonToLuaTable(lua_State* L, const Json::Value& value);
 };

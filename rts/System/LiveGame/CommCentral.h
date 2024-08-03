@@ -1,4 +1,4 @@
-#if ENABLE_LIVE_GAME
+#ifdef ENABLE_LIVE_GAME
 
 #include "Net/LocalMemComm/common.h"
 #include "Net/LocalMemComm/local_mem_proto.h"
@@ -9,7 +9,7 @@
 
 class CLocalCommCentralErrorHandler {
 public:
-	void error(const std::string& msg);
+	static void error(const std::string& msg);
 };
 
 class CCommCentral {

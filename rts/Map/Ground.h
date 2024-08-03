@@ -20,7 +20,7 @@ public:
 	static float GetHeightReal(float x, float z, bool synced = true);
 	static float GetOrigHeight(float x, float z);
 
-	static consteval float GetWaterPlaneLevel() {
+	static constexpr float GetWaterPlaneLevel() {
 		/* Water plane height is hardcoded currently.
 		 * This function exists for future-proofing since
 		 * a dynamic water level is a common request, and
