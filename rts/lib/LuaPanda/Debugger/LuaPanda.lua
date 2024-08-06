@@ -1653,7 +1653,7 @@ function this.getStackTable( level )
         if info == nil then
             break;
         end
-        if info.source ~= "=[C]" then
+        if info.source ~= "=[C]" and info.source ~= "=(tail call)" then
             local ss = {};
             ss.file = this.getPath(info);
             local oPathFormated = this.formatOpath(info.source) ; --从lua虚拟机获得的原始路径, 它用于帮助定位VScode端原始lua文件的位置(存在重名文件的情况)。
@@ -2142,6 +2142,11 @@ function this.real_hook_process(info)
     --不处理 xlua "chunk"
     if info.source == "chunk" then
         this.printToVSCode("current method is in chunk");
+        return;
+    end
+
+    if info.source == "=(tail call)" then
+        this.printToVSCode("current method is =(tail call)");
         return;
     end
 

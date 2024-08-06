@@ -32,7 +32,6 @@ protected:
 	virtual ~CLuaIntro();
 
 	std::string LoadFile(const std::string& filename) const;
-	void InitLuaSocket(lua_State* L);
 
 private:
 	static bool LoadUnsyncedCtrlFunctions(lua_State* L);

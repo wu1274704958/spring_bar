@@ -60,7 +60,7 @@ CLuaIntro::CLuaIntro()
 	std::string code = LoadFile(file);
 
 #ifdef ENABLE_LUA_PANDA
-	const bool luaPandaDebug = configHandler->GetBool("LuaPandaDebug");
+	const bool luaPandaDebug = configHandler->GetBoolSafe("LuaPandaDebug_LuaIntro",false);
 #endif
 
 	if (code.empty()) {
@@ -138,17 +138,18 @@ CLuaIntro::CLuaIntro()
 
 	RemoveSomeOpenGLFunctions(L);
 
-	#ifdef ENABLE_LUA_PANDA
+	lua_settop(L, 0);
+
+#ifdef ENABLE_LUA_PANDA
 	if (luaPandaDebug)
 	{
-		const std::string ip = configHandler->GetStringSafe("LuaPandaDebugIp","127.0.0.1");
+		const std::string ip = configHandler->GetStringSafe("LuaPandaDebugIp", "127.0.0.1");
 		const int port = configHandler->GetIntSafe("LuaPandaDebugPort", 8818);
-		const bool breakImmediately = configHandler->GetBoolSafe("LuaPandaDebugBreakImmediately",false);
-		StartPandaDebugger(L,ip, port, breakImmediately);
+		const bool breakImmediately = configHandler->GetBoolSafe("LuaPandaDebugBreakImmediately", false);
+		StartPandaDebugger(L, ip, port, breakImmediately);
 	}
-	#endif
+#endif
 
-	lua_settop(L, 0);
 	if (!LoadCode(L, std::move(code), file)) {
 		KillLua();
 		return;
@@ -159,22 +160,6 @@ CLuaIntro::CLuaIntro()
 	// register for call-ins
 	eventHandler.AddClient(this);
 }
-
-void CLuaIntro::InitLuaSocket(lua_State* L) {
-	RECOIL_DETAILED_TRACY_ZONE;
-	std::string code;
-	std::string filename = "socket.lua";
-	CFileHandler f(filename);
-
-	LUA_OPEN_LIB(L, luaopen_socket_core);
-
-	if (f.LoadStringData(code)) {
-		LoadCode(L, std::move(code), filename);
-	} else {
-		LOG_L(L_ERROR, "Error loading %s", filename.c_str());
-	}
-}
-
 
 CLuaIntro::~CLuaIntro()
 {

@@ -325,6 +325,7 @@ class CLuaHandle : public CEventClient
 		void InitLuaPandaDebug(lua_State* L);
 		int StartPandaDebugger(lua_State* L, const std::string& ip = "127.0.0.1", int port = 8818, bool breakImmediately = false);
 		#endif
+		void InitLuaSocket(lua_State* L);
 	protected:
 		bool userMode = false;
 		bool killMe = false; // set for handles that fail to RunCallIn

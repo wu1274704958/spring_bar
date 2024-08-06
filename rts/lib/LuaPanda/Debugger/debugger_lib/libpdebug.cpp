@@ -732,7 +732,7 @@ void hook_process_recv_message(lua_State *L){
 }
 
 int hook_process_cfunction(lua_State *L, lua_Debug *ar){
-    if (!(strcmp(ar->what, "C")) || ar->currentline < 0) {
+    if ((!(strcmp(ar->what, "C")) || !(strcmp(ar->what,"tail"))) || ar->currentline < 0) {
         //Lua5.1 tail return会走到这里
         if(!(strcmp(ar->source, "=(tail call)")) && ar -> event == TAILRET && (cur_run_state == STEPOVER || cur_run_state == STEPOUT )){
             stackdeep_counter --;

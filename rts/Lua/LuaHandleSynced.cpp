@@ -55,6 +55,11 @@
 #ifdef ENABLE_LIVE_GAME
 #include "System/LiveGame/LuaCommCentral.h"
 #endif // ENABLE_LIVE_GAME
+#ifdef ENABLE_LUA_PANDA
+#include "lib/luasocket/src/luasocket.h"
+#include "System/Config/ConfigHandler.h"
+#endif // ENABLE_LUA_PANDA
+
 
 
 
@@ -88,6 +93,16 @@ bool CUnsyncedLuaHandle::Init(std::string code, const std::string& file)
 	if (!IsValid())
 		return false;
 
+#ifdef ENABLE_LUA_PANDA
+	std::string key = "LuaPandaDebug";
+	key += '_';
+	key += name;
+	key += "_Unsynced";
+	const bool luaPandaDebug = configHandler->GetBoolSafe(key,false);
+#else
+	const bool luaPandaDebug = false;
+#endif
+
 	// load the standard libraries
 	LUA_OPEN_LIB(L, luaopen_base);
 	LUA_OPEN_LIB(L, luaopen_math);
@@ -97,6 +112,15 @@ bool CUnsyncedLuaHandle::Init(std::string code, const std::string& file)
 	//LUA_OPEN_LIB(L, luaopen_os);
 	//LUA_OPEN_LIB(L, luaopen_package);
 	//LUA_OPEN_LIB(L, luaopen_debug);
+#ifdef ENABLE_LUA_PANDA
+	if (luaPandaDebug)
+	{
+		InitLuaSocket(L);
+		LUA_OPEN_LIB(L, luaopen_io);
+		LUA_OPEN_LIB(L, luaopen_os);
+		LUA_OPEN_LIB(L, luaopen_debug);
+	}
+#endif
 
 	// delete some dangerous functions
 	lua_pushnil(L); lua_setglobal(L, "dofile");
@@ -151,6 +175,17 @@ bool CUnsyncedLuaHandle::Init(std::string code, const std::string& file)
 	}
 
 	lua_settop(L, 0);
+
+#ifdef ENABLE_LUA_PANDA
+	if (luaPandaDebug)
+	{
+		InitLuaPandaDebug(L);
+		const std::string ip = configHandler->GetStringSafe("LuaPandaDebugIp", "127.0.0.1");
+		const int port = configHandler->GetIntSafe("LuaPandaDebugPort", 8818);
+		const bool breakImmediately = configHandler->GetBoolSafe("LuaPandaDebugBreakImmediately", false);
+		StartPandaDebugger(L, ip, port, breakImmediately);
+	}
+#endif
 
 	// add code from the sub-class
 	if (!base.AddUnsyncedCode(L)) {
@@ -435,6 +470,16 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 	if (!IsValid())
 		return false;
 
+#ifdef ENABLE_LUA_PANDA
+	std::string key = "LuaPandaDebug";
+	key += '_';
+	key += name;
+	key += "_Synced";
+	const bool luaPandaDebug = configHandler->GetBoolSafe(key,false);
+#else
+	const bool luaPandaDebug = false;
+#endif
+
 	watchUnitDefs.resize(unitDefHandler->NumUnitDefs() + 1, false);
 	watchFeatureDefs.resize(featureDefHandler->NumFeatureDefs() + 1, false);
 	watchExplosionDefs.resize(weaponDefHandler->NumWeaponDefs(), false);
@@ -451,6 +496,16 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 	//SPRING_LUA_OPEN_LIB(L, luaopen_package);
 	//SPRING_LUA_OPEN_LIB(L, luaopen_debug);
 
+#ifdef ENABLE_LUA_PANDA
+	if (luaPandaDebug)
+	{
+		InitLuaSocket(L);
+		LUA_OPEN_LIB(L, luaopen_io);
+		LUA_OPEN_LIB(L, luaopen_os);
+		LUA_OPEN_LIB(L, luaopen_debug);
+	}
+#endif
+
 	lua_getglobal(L, "next");
 	origNextRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -466,7 +521,14 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 //	lua_pushnil(L); lua_setglobal(L, "setfenv");
 	lua_pushnil(L); lua_setglobal(L, "newproxy"); // sync unsafe cause of __gc
 	lua_pushnil(L); lua_setglobal(L, "gcinfo");
+#ifdef ENABLE_LUA_PANDA
+	if (!luaPandaDebug)
+	{
+		lua_pushnil(L); lua_setglobal(L, "collectgarbage");
+	}
+#else
 	lua_pushnil(L); lua_setglobal(L, "collectgarbage");
+#endif
 
 	lua_pushvalue(L, LUA_GLOBALSINDEX);
 	LuaPushNamedCFunc(L, "loadstring", CSplitLuaHandle::LoadStringData);
@@ -541,6 +603,17 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 
 	lua_settop(L, 0);
 	creg::AutoRegisterCFunctions(GetName(), L);
+
+#ifdef ENABLE_LUA_PANDA
+	if (luaPandaDebug)
+	{
+		InitLuaPandaDebug(L);
+		const std::string ip = configHandler->GetStringSafe("LuaPandaDebugIp", "127.0.0.1");
+		const int port = configHandler->GetIntSafe("LuaPandaDebugPort", 8818);
+		const bool breakImmediately = configHandler->GetBoolSafe("LuaPandaDebugBreakImmediately", false);
+		StartPandaDebugger(L, ip, port, breakImmediately);
+	}
+#endif
 
 	if (!LoadCode(L, std::move(code), file)) {
 		KillLua();

@@ -61,6 +61,7 @@
 #include "System/FileSystem/FileHandler.h"
 #endif // ENABLE_LUA_PANDA
 
+#include "lib/luasocket/src/luasocket.h"
 
 
 CONFIG(float, LuaGarbageCollectionMemLoadMult).defaultValue(1.33f).minimumValue(1.0f).maximumValue(100.0f).description("How much the amount of Lua memory in use increases the rate of garbage collection.");
@@ -4031,6 +4032,22 @@ int CLuaHandle::StartPandaDebugger(lua_State* L, const std::string& ip, int port
 }
 
 #endif
+
+void CLuaHandle::InitLuaSocket(lua_State* L) {
+	RECOIL_DETAILED_TRACY_ZONE;
+	std::string code;
+	std::string filename = "socket.lua";
+	CFileHandler f(filename);
+
+	LUA_OPEN_LIB(L, luaopen_socket_core);
+
+	if (f.LoadStringData(code)) {
+		LoadCode(L, std::move(code), filename);
+	}
+	else {
+		LOG_L(L_ERROR, "Error loading %s", filename.c_str());
+	}
+}
 
 
 /******************************************************************************/
