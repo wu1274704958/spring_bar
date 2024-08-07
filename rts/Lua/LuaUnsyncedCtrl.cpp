@@ -4888,7 +4888,7 @@ int LuaUnsyncedCtrl::SetWindowMaximized(lua_State* L)
  */
 int LuaUnsyncedCtrl::Reload(lua_State* L)
 {
-	return (ReloadOrRestart("", luaL_checkstring(L, 1), false));
+	return (ReloadOrRestart("", luaL_optstring(L, 1, ""), false));
 }
 
 

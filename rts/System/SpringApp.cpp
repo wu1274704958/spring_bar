@@ -586,6 +586,8 @@ CGameController* SpringApp::RunScript(const std::string& buf)
 		throw content_error(std::string("Invalid script file\n") + err.what());
 	}
 
+	lastLoadScript = buf;
+
 	if (!clientSetup->demoFile.empty())
 		return LoadDemoFile(clientSetup->demoFile);
 
@@ -885,6 +887,8 @@ int SpringApp::Run()
 
 			if (gu->globalReload) {
 				// copy; reloadScript is cleared by ResetState
+				if(gameSetup->reloadScript.empty() && !lastLoadScript.empty())
+					gameSetup->reloadScript = lastLoadScript;
 				Reload(gameSetup->reloadScript);
 			} else {
 				gu->globalQuit = (!Update() || gu->globalQuit);

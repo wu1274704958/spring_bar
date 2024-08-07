@@ -60,6 +60,7 @@ private:
 
 private:
 	std::string inputFile;
+	std::string lastLoadScript;
 
 	// this gets passed along to PreGame (or SelectMenu then PreGame),
 	// and from thereon to GameServer if this client is also the host
