@@ -149,7 +149,7 @@ void LuaCommCentral::JsonToLuaTable(lua_State* L, const Json::Value& value)
     else if (value.isArray()) {
         lua_newtable(L);
         for (Json::ArrayIndex i = 0; i < value.size(); ++i) {
-            lua_pushnumber(L, i);       
+            lua_pushnumber(L, i + 1);       
             JsonToLuaTable(L, value[i]);    
             lua_settable(L, -3);            
         }
