@@ -83,6 +83,11 @@ CLuaUI::CLuaUI()
 	shockFrontDistAdj  = 100.0f;
 
 	const bool luaSocketEnabled = configHandler->GetBool("LuaSocketEnabled");
+#ifdef ENABLE_LUA_PANDA
+	const bool luaPandaDebug = configHandler->GetBoolSafe("LuaPandaDebug_LuaUI",false);
+#else
+	const bool luaPandaDebug = false;
+#endif
 
 	const std::string mode = (CLuaHandle::GetDevMode()) ? SPRING_VFS_RAW_FIRST : SPRING_VFS_MOD;
 	const std::string file = (CFileHandler::FileExists("luaui.lua", mode) ? "luaui.lua": "LuaUI/main.lua");
@@ -106,7 +111,7 @@ CLuaUI::CLuaUI()
 	LUA_OPEN_LIB(L, luaopen_debug);
 
 	// initialize luasocket
-	if (luaSocketEnabled)
+	if (luaSocketEnabled || luaPandaDebug)
 		InitLuaSocket(L);
 
 	// setup the lua IO access check functions
@@ -165,6 +170,18 @@ CLuaUI::CLuaUI()
 	}
 
 	lua_settop(L, 0);
+
+#ifdef ENABLE_LUA_PANDA
+	if (luaPandaDebug)
+	{
+		InitLuaPandaDebug(L);
+		const std::string ip = configHandler->GetStringSafe("LuaPandaDebugIp", "127.0.0.1");
+		const int port = configHandler->GetIntSafe("LuaPandaDebugPort", 8818);
+		const bool breakImmediately = configHandler->GetBoolSafe("LuaPandaDebugBreakImmediately", false);
+		StartPandaDebugger(L, ip, port, breakImmediately);
+	}
+#endif
+
 	if (!LoadCode(L, std::move(code), file)) {
 		KillLua();
 		return;
