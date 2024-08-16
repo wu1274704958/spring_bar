@@ -235,12 +235,8 @@ void CUnit::PreInit(const UnitLoadParams& params)
 	selectionVolume = unitDef->selectionVolume;
 
     worldOffset = unitDef->worldOffset;
-    if(!unitDef->scales.same(OnesVector))
+    if(unitDef->scales != OnesVector)
         SetScale(unitDef->scales);
-	// specialize defaults if non-custom sphere or footprint-box
-	collisionVolume.InitDefault(float4(model->radius, model->height,  xsize * SQUARE_SIZE, zsize * SQUARE_SIZE));
-	selectionVolume.InitDefault(float4(model->radius, model->height,  xsize * SQUARE_SIZE, zsize * SQUARE_SIZE));
-
 
 	mapSquare = CGround::GetSquare((params.pos).cClampInMap());
 
@@ -251,11 +247,15 @@ void CUnit::PreInit(const UnitLoadParams& params)
 	Move(preFramePos = params.pos.cClampInMap(), false);
 
 	UpdateDirVectors(!upright && IsOnGround(), false, 0.0f);
-	SetMidAndAimPos(model->relMidPos, model->relMidPos, true);
+	SetMidAndAimPos(model->relMidPos * unitDef->scales, model->relMidPos * unitDef->scales, true);
 	SetRadiusAndHeight(model);
 	UpdateMidAndAimPos();
 
 	buildeeRadius = (unitDef->buildeeBuildRadius >= 0.f) ? unitDef->buildeeBuildRadius : radius;
+
+	// specialize defaults if non-custom sphere or footprint-box
+	collisionVolume.InitDefault(float4(radius, height,  xsize * SQUARE_SIZE, zsize * SQUARE_SIZE));
+	selectionVolume.InitDefault(float4(radius, height,  xsize * SQUARE_SIZE, zsize * SQUARE_SIZE));
 
 	unitHandler.AddUnit(this);
 	quadField.MovedUnit(this);

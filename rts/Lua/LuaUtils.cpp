@@ -705,7 +705,7 @@ int LuaUtils::PushModelHeight(lua_State* L, const SolidObjectDef* def, bool isUn
 	}
 
 	if (model != nullptr)
-		height = model->height;
+		height = model->height * def->scales.y;
 
 	lua_pushnumber(L, height);
 	return 1;
@@ -735,7 +735,7 @@ int LuaUtils::PushModelRadius(lua_State* L, const SolidObjectDef* def, bool isUn
 	}
 
 	if (model != nullptr)
-		radius = model->radius;
+		radius = model->radius * std::max(def->scales.x,def->scales.z);
 
 	lua_pushnumber(L, radius);
 	return 1;

@@ -443,21 +443,20 @@ float CSolidObject::CalcFootPrintAxisStretchFactor() const
 
 void CSolidObject::SetScale(float3 scale) {
 
-    assert(!localModel.pieces.empty());
+	if(scales != scale)
+	{
+		scales = scale;
+		assert(!localModel.pieces.empty());
 
-    localModel.pieces[0].SetScales(scale);
+		localModel.pieces[0].SetScales(scale);
 
-    for(int i = 0;i < localModel.pieces.size();++i)
-    {
-        localModel.pieces[i].SetDirty();
-    }
-    localModel.GetRoot()->UpdateChildMatricesRec(true);
-    localModel.UpdateBoundingVolume();
+		for(int i = 0;i < localModel.pieces.size();++i)
+		{
+			localModel.pieces[i].SetDirty();
+		}
+		localModel.GetRoot()->UpdateChildMatricesRec(true);
+		localModel.UpdateBoundingVolume();
 
-    model->radius *= scale.x;
-    model->height *= scale.y;
-    model->mins *= scale;
-    model->maxs *= scale;
-    model->relMidPos *= scale;
+	}
 }
 

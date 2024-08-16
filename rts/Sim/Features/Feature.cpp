@@ -209,10 +209,10 @@ void CFeature::Initialize(const FeatureLoadParams& params)
 				localModel.SetModel(model);
 
                 worldOffset = def->worldOffset;
-                if(!def->scales.same(OnesVector))
+                if(def->scales != OnesVector)
                     SetScale(def->scales);
 
-                SetMidAndAimPos(model->relMidPos, model->relMidPos, true);
+                SetMidAndAimPos(model->relMidPos * scales, model->relMidPos * scales, true);
                 SetRadiusAndHeight(model);
 			} else {
 				LOG_L(L_ERROR, "[%s] couldn't load model for %s", __FUNCTION__, def->name.c_str());

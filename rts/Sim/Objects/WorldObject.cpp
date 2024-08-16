@@ -33,9 +33,10 @@ void CWorldObject::SetRadiusAndHeight(const S3DModel* mdl)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	// initial values; can be overridden by LSC::Set*RadiusAndHeight
-	SetRadiusAndHeight(mdl->radius, mdl->height);
+	SetRadiusAndHeight(mdl->radius * std::max(scales.x,scales.z), mdl->height * scales.y);
 
 	// model->radius defaults to this, but can be badly overridden
 	// we always want the (more reliable) auto-calculated DR value
-	drawRadius = mdl->CalcDrawRadius();
+	//drawRadius = mdl->CalcDrawRadius();
+	drawRadius = (((mdl->maxs * scales) - (mdl->mins * scales)).Length() * 0.5f);
 }
