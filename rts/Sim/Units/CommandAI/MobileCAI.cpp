@@ -579,7 +579,7 @@ bool CMobileCAI::IsValidTarget(const CUnit* enemy, CWeapon* weapon) const {
 	if (enemy == owner)
 		return false;
 
-	if (owner->unitDef->noChaseCategory & enemy->category)
+	if (owner->noChaseCategory & enemy->category)
 		return false;
 
 	// don't _auto_ chase neutrals

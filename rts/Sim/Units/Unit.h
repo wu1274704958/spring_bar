@@ -413,6 +413,7 @@ public:
 	int armorType = 0;
 	// what categories the unit is part of (bitfield)
 	unsigned int category = 0;
+	unsigned int noChaseCategory = 0;
 
 	int mapSquare = -1;
 

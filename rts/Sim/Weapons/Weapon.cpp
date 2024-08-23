@@ -966,6 +966,8 @@ bool CWeapon::TestTarget(const float3 tgtPos, const SWeaponTarget& trg) const
 		case Target_Unit: {
 			if (trg.unit == owner || trg.unit == nullptr)
 				return false;
+			if (trg.unit != nullptr && owner->noChaseCategory & trg.unit->category)
+				return false;
 			if ((trg.unit->category & onlyTargetCategory) == 0)
 				return false;
 			if (trg.unit->isDead && !modInfo.fireAtKilled)

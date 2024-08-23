@@ -75,6 +75,7 @@
 #include "System/EventHandler.h"
 #include "System/ObjectDependenceTypes.h"
 #include "System/Log/ILog.h"
+#include "Sim/Misc/CategoryHandler.h"
 
 using std::max;
 
@@ -353,6 +354,9 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(SetRadarErrorParams);
 	REGISTER_LUA_CFUNC(SetUnitScale);
+
+	REGISTER_LUA_CFUNC(AppendUnitNoChaseCategory);
+	REGISTER_LUA_CFUNC(AppendUnitCategory);
 
 	if (!LuaSyncedMoveCtrl::PushMoveCtrl(L))
 		return false;
@@ -7020,6 +7024,59 @@ int LuaSyncedCtrl::SetRadarErrorParams(lua_State* L)
 	return 0;
 }
 
+/***
+ *
+ * @function Spring.AppendUnitNoChaseCategory
+ * @number unitID
+ * @string categorys
+ * @treturn bool
+ */
+int LuaSyncedCtrl::AppendUnitNoChaseCategory(lua_State* L)
+{
+	CUnit* unit = ParseUnit(L, __func__, 1);
+
+	if (unit == nullptr)
+	{
+		lua_pushboolean(L,false);
+		return 1;
+	}
+	const auto res = CCategoryHandler::Instance()->GetCategories(luaL_checkstring(L,2));
+	if(res > 0)
+	{
+		unit->noChaseCategory |= res;
+		lua_pushboolean(L,true);
+		return 1;
+	}
+	lua_pushboolean(L,false);
+	return 1;
+}
+
+/***
+ *
+ * @function Spring.AppendUnitCategory
+ * @number unitID
+ * @string categorys
+ * @treturn bool
+ */
+int LuaSyncedCtrl::AppendUnitCategory(lua_State* L)
+{
+	CUnit* unit = ParseUnit(L, __func__, 1);
+
+	if (unit == nullptr)
+	{
+		lua_pushboolean(L,false);
+		return 1;
+	}
+	const auto res = CCategoryHandler::Instance()->GetCategories(luaL_checkstring(L,2));
+	if(res > 0)
+	{
+		unit->category |= res;
+		lua_pushboolean(L,true);
+		return 1;
+	}
+	lua_pushboolean(L,false);
+	return 1;
+}
 
 /******************************************************************************/
 /******************************************************************************/
