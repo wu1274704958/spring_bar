@@ -640,6 +640,15 @@ static int SetSolidObjectHeadingAndUpDir(lua_State* L, CSolidObject* o, bool isF
 	return 0;
 }
 
+void OnUnitDirectionUpdated(CUnit* unit)
+{
+	if(unit->moveType == nullptr)
+		return;
+	CGroundMoveType* groundMoveType = dynamic_cast<CGroundMoveType*>(unit->moveType);
+	if(groundMoveType != nullptr)
+		groundMoveType->UpdateFrontDir();
+}
+
 static int SetSolidObjectDirection(lua_State* L, CSolidObject* o)
 {
 	if (o == nullptr)
@@ -652,6 +661,9 @@ static int SetSolidObjectDirection(lua_State* L, CSolidObject* o)
 	}
 
 	o->ForcedSpin(newDir);
+	CUnit* unit = dynamic_cast<CUnit*>(o);
+	if(unit != nullptr)
+		OnUnitDirectionUpdated(unit);
 	return 0;
 }
 
@@ -3805,7 +3817,7 @@ int LuaSyncedCtrl::SetUnitVelocity(lua_State* L)
 }
 
 /***
- * @function Spring.SetUnitVelocity
+ * @function Spring.SetUnitScale
  * @number unitID
  * @number scaleX
  * @number scaleY

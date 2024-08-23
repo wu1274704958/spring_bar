@@ -150,6 +150,7 @@ public:
 	bool IsAtGoal() const override { return atGoal; }
 	void OwnerMayBeStuck() { forceStaticObjectCheck = true; };
 	void SetMtJobId(int _jobId) { jobId = _jobId; }
+	void UpdateFrontDir();
 
 private:
 	float3 GetObstacleAvoidanceDir(const float3& desiredDir);

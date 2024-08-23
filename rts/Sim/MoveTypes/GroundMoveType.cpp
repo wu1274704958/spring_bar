@@ -1403,6 +1403,11 @@ void CGroundMoveType::ChangeHeading(short newHeading) {
 	flatFrontDir = (owner->frontdir * XZVector).Normalize();
 }
 
+void CGroundMoveType::UpdateFrontDir()
+{
+	flatFrontDir = (owner->frontdir * XZVector).Normalize();
+}
+
 
 bool CGroundMoveType::CanApplyImpulse(const float3& impulse)
 {
