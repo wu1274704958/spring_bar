@@ -659,6 +659,7 @@ void CUnit::Update()
 	UpdatePhysicalState(0.1f);
 	UpdatePosErrorParams(true, false);
 	UpdateTransportees(); // none if already dead
+	UpdateInvincible();
 
 	if (beingBuilt)
 		return;
@@ -680,6 +681,12 @@ void CUnit::Update()
 	restTime += 1;
 	outOfMapTime += 1;
 	outOfMapTime *= (!pos.IsInBounds());
+}
+
+void CUnit::UpdateInvincible()
+{
+	if(invincible > 0)
+		invincible = std::max(0,invincible - (1000 / GAME_SPEED)); 
 }
 
 void CUnit::UpdateWeaponVectors()
@@ -1214,6 +1221,8 @@ static void AddUnitDamageStats(CUnit* unit, float damage, bool dealt)
 void CUnit::ApplyDamage(CUnit* attacker, const DamageArray& damages, float& baseDamage, float& experienceMod)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+	if (invincible == -1 || invincible > 0)
+		return;
 	if (damages.paralyzeDamageTime == 0) {
 		// real damage
 		if (baseDamage > 0.0f) {

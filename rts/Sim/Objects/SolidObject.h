@@ -317,6 +317,8 @@ public:
 	float health = 0.0f;
 	float maxHealth = 1.0f;
 
+	int invincible = 0;
+
 	entt::entity entityReference = entt::null;
 
 	///< the physical mass of this object (can be changed by SetMass)

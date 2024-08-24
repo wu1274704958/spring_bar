@@ -192,6 +192,7 @@ public:
 
 	void UpdateWeapons();
 	void UpdateWeaponVectors();
+	void UpdateInvincible();
 
 	void SlowUpdateWeapons();
 	void SlowUpdateKamikaze(bool scanForTargets);

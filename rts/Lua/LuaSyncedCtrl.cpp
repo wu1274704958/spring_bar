@@ -354,6 +354,7 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(SetRadarErrorParams);
 	REGISTER_LUA_CFUNC(SetUnitScale);
+	REGISTER_LUA_CFUNC(SetUnitInvincible);
 
 	REGISTER_LUA_CFUNC(AppendUnitNoChaseCategory);
 	REGISTER_LUA_CFUNC(AppendUnitCategory);
@@ -3831,6 +3832,22 @@ int LuaSyncedCtrl::SetUnitVelocity(lua_State* L)
 int LuaSyncedCtrl::SetUnitScale(lua_State* L)
 {
 	return (SetSolidObjectScale(L, ParseUnit(L, __func__, 1)));
+}
+
+/***
+ * @function Spring.SetUnitInvincible
+ * @number unitID
+ * @interger invincible equal to -1 invincible forever,greater than 0 Invincible within n milliseconds 
+ */
+int LuaSyncedCtrl::SetUnitInvincible(lua_State* L)
+{
+	CUnit* unit = ParseUnit(L, __func__, 1);
+
+	if (unit == nullptr)
+		return 0;
+
+	unit->invincible = luaL_checkint(L,2);	
+	return 0;
 }
 
 

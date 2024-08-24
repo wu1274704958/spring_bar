@@ -22,6 +22,7 @@ CR_REG_METADATA(CSolidObject,
 (
 	CR_MEMBER(health),
 	CR_MEMBER(maxHealth),
+	CR_MEMBER(invincible),
 	CR_MEMBER(entityReference),
 
 	CR_MEMBER(mass),
