@@ -277,7 +277,7 @@ void CUnit::PreInit(const UnitLoadParams& params)
 	armoredMultiple = unitDef->armoredMultiple;
 	armorType = unitDef->armorType;
 	category = unitDef->category;
-	noChaseCategory = unitDef->noChaseCategory;
+	noChaseCategory = 0;
 	leaveTracks = unitDef->decalDef.leaveTrackDecals;
 
 	unitToolTipMap.Set(id, unitDef->humanName + " - " + unitDef->tooltip);
