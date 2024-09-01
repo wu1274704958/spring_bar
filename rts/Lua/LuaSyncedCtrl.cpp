@@ -1168,8 +1168,13 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 	if (!teamHandler.IsValidTeam(teamID))
 		return 0;
 
+#ifndef ENABLE_LIVE_GAME
 	if (!CanControlTeam(L, teamID))
 		return 0;
+#else
+	if (!luaL_optboolean(L,4,false) && !CanControlTeam(L, teamID))
+		return 0;
+#endif
 
 	CTeam* team = teamHandler.Team(teamID);
 

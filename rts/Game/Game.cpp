@@ -1208,10 +1208,6 @@ bool CGame::Update()
 	jobDispatcher.Update();
 	clientNet->Update();
 
-#ifdef ENABLE_LIVE_GAME
-	LuaCommCentral::Tick();
-#endif
-
 	// When video recording do step by step simulation, so each simframe gets a corresponding videoframe
 	// FIXME: SERVER ALREADY DOES THIS BY ITSELF
 	if (playing && gameServer != nullptr && videoCapturing->AllowRecord())

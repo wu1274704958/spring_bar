@@ -13,6 +13,7 @@ bool LuaCommCentral::PushEntries(lua_State* L)
     REGISTER_LUA_CFUNC(InitLMCommCentral);
     REGISTER_LUA_CFUNC(ReleaseLMCommCentral);
     REGISTER_LUA_CFUNC(SendLocalMemMsg);
+    REGISTER_LUA_CFUNC(TickLMCommCentral);
     return true;
 }
 
@@ -28,7 +29,7 @@ int LuaCommCentral::InitLMCommCentral(lua_State* L)
 
 int LuaCommCentral::ReleaseLMCommCentral(lua_State* L)
 {
-	commCentral.Destroy();
+	commCentral.Destroy(luaL_optboolean(L,1,true));
 	return 0;
 }
 
@@ -60,10 +61,21 @@ void LuaCommCentral::Tick()
     }
 }
 
+int LuaCommCentral::TickLMCommCentral(lua_State* L)
+{
+    Tick();
+    return 0;
+}
+
 Json::Value LuaValueToJson(lua_State* L, int index) {
     switch (lua_type(L, index)) {
     case LUA_TNUMBER:
-        return Json::Value(lua_tonumber(L, index));
+    {
+        auto v = lua_tonumber(L, index);
+        if(std::floor(v) == v)
+            return Json::Value((int)v);
+        return Json::Value(v);
+    }
     case LUA_TSTRING:
         return Json::Value(lua_tostring(L, index));
     case LUA_TBOOLEAN:

@@ -20,7 +20,6 @@ namespace eqd {
 		//[Count:1][MsgId:1][SendId:1][RecvCount:1][Len:4][Checksum:4][Data:Len]
 		LMC_state try_send(uint8_t* ptr, uint32_t size, const std::vector<uint8_t>& buf)
 		{
-			if (send_id == 0) return LMC_state::Uninit;
 			if (buf.size() + HeaderSize > size)
 			{
 				_last_error = "message too large";
@@ -28,11 +27,11 @@ namespace eqd {
 			}
 			if (ptr[2] == ST_IDLE && ptr[3] == 0)
 			{
-				ptr[1] = ptr[1] + 1;
+				last_recv_msg_id = ptr[1] = ptr[1] + 1;
 				if (ptr[1] == 0)
 					ptr[1] = 1;
 //				std::cout << "<<< send id = " << (int)ptr[1] << std::endl;
-				ptr[2] = send_id;
+				ptr[2] = 1;
 				ptr[3] = 0;
 				write_data(ptr + 4, static_cast<uint32_t>(buf.size()));
 				write_data(ptr + 4 + sizeof(uint32_t), static_cast<uint32_t>(CS::checksum(buf)));
@@ -44,16 +43,10 @@ namespace eqd {
 
 		LMC_state try_recv(uint8_t* ptr, uint32_t size, std::function<void(uint8_t*, uint32_t)> callback)
 		{
-			if (send_id == 0) return LMC_state::Uninit;
 			if (ptr[2] == ST_IDLE && ptr[3] == 0)
 				return LMC_state::Idle;
-			if (ptr[2] == send_id)
-				return LMC_state::Busy;
 			if (last_recv_msg_id == ptr[1])
 			{
-				//readed count > sum - 1 can clear 
-				if (ptr[3] >= ptr[0] - 1)
-					set_idle(ptr, size);
 				return LMC_state::Busy;
 			}
 //			std::cout << ">>> recv id = " << (int)ptr[1] << std::endl;
@@ -76,6 +69,7 @@ namespace eqd {
 				set_idle(ptr, size);
 			else
 				sign(ptr, size);
+				
 			return LMC_state::Success;
 		}
 		const std::string& last_error() { return _last_error; }
@@ -97,13 +91,14 @@ namespace eqd {
 				_last_error = "This memory is max count";
 				return false;
 			}
-			send_id = ptr[0] = ptr[0] + 1;
+			ptr[0] = ptr[0] + 1;
 			return true;
 		}
 		
 		void release(uint8_t* ptr, uint32_t size){
 			ptr[0] = ptr[0] - 1;
-			send_id = 0;
+			if (ptr[3] + 1 == ptr[0] - 1)
+				set_idle(ptr, size);
 		}
 
 	private:
@@ -122,7 +117,6 @@ namespace eqd {
 		}
 
 		std::string _last_error;
-		uint8_t send_id = 0;
 		uint8_t last_recv_msg_id = 0;
 	};
 
