@@ -19,6 +19,7 @@
 #endif
 
 #include "System/Misc/TracyDefs.h"
+#include "Sim/Misc/CategoryHandler.h"
 
 CR_BIND(CQuadField, )
 CR_REG_METADATA(CQuadField, (
@@ -926,6 +927,87 @@ void CQuadField::GetUnitsAndFeaturesColVol(
 		}
 		if (repulsers != nullptr) {
 			for (CPlasmaRepulser* r: quad.repulsers) {
+				// prevent double adding
+				if (r->tempNum == tempNum)
+					continue;
+
+				r->tempNum = tempNum;
+
+				const auto* colvol = &r->collisionVolume;
+				const float totRad = radius + colvol->GetBoundingRadius();
+
+				if (pos.SqDistance(r->weaponMuzzlePos) >= (totRad * totRad))
+					continue;
+
+				repulsers->push_back(r);
+			}
+		}
+	}
+}
+
+
+void CQuadField::GetUnitsAndFeaturesColVol(
+	const float3& pos,
+	const float radius,
+	const CUnit* refUnit,
+	bool ignoreTeam,
+	bool ignoreAllyTeam,
+	std::vector<CUnit*>& units,
+	std::vector<CFeature*>& features,
+	std::vector<CPlasmaRepulser*>* repulsers
+)
+{
+	RECOIL_DETAILED_TRACY_ZONE;
+	const int tempNum = gs->GetTempNum();
+
+	QuadFieldQuery qfQuery;
+	GetQuads(qfQuery, pos, radius);
+	// start counting from the previous object-cache sizes
+	const int selfDestructCategory = CCategoryHandler::Instance()->GetCategory("SELFDESTRUCT");
+
+	for (const int qi : *qfQuery.quads) {
+		const Quad& quad = baseQuads[qi];
+
+		for (CUnit* u : quad.units) {
+			// prevent double adding
+			if (u->tempNum == tempNum)
+				continue;
+
+			auto isSelfDestruct = (u->category & selfDestructCategory) != 0;
+
+			if (refUnit && ignoreTeam && !isSelfDestruct && u->team == refUnit->team)
+				continue;
+			if (refUnit && ignoreAllyTeam && !isSelfDestruct && u->allyteam == refUnit->allyteam)
+				continue;
+
+			u->tempNum = tempNum;
+
+			const auto* colvol = &u->collisionVolume;
+			const float totRad = radius + colvol->GetBoundingRadius();
+
+			if (pos.SqDistance(colvol->GetWorldSpacePos(u)) >= (totRad * totRad))
+				continue;
+
+			units.push_back(u);
+		}
+
+		for (CFeature* f : quad.features) {
+			// prevent double adding
+			if (f->tempNum == tempNum)
+				continue;
+
+			f->tempNum = tempNum;
+
+			const auto* colvol = &f->collisionVolume;
+			const float totRad = radius + colvol->GetBoundingRadius();
+
+			if (pos.SqDistance(colvol->GetWorldSpacePos(f)) >= (totRad * totRad))
+				continue;
+
+			features.push_back(f);
+		}
+		if (repulsers != nullptr) {
+			for (CPlasmaRepulser* r : quad.repulsers) {
 				// prevent double adding
 				if (r->tempNum == tempNum)
 					continue;

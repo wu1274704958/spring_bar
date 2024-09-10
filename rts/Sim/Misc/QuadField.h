@@ -104,6 +104,16 @@ public:
 		std::vector<CFeature*>& features,
 		std::vector<CPlasmaRepulser*>* repulsers = nullptr
 	);
+	void GetUnitsAndFeaturesColVol(
+		const float3& pos,
+		const float radius,
+		const CUnit* refUnit,
+		bool ignoreTeam,
+		bool ignoreAllyTeam,
+		std::vector<CUnit*>& units,
+		std::vector<CFeature*>& features,
+		std::vector<CPlasmaRepulser*>* repulsers = nullptr
+	);
 
 	/**
 	 * Returns all units within @c radius of @c pos,

@@ -225,7 +225,9 @@ void CGameHelper::DamageObjectsInExplosionRadius(
 	const unsigned int oldNumUnits = unitCache.size();
 	const unsigned int oldNumFeatures = featureCache.size();
 
-	quadField.GetUnitsAndFeaturesColVol(params.pos, expRad, unitCache, featureCache);
+	quadField.GetUnitsAndFeaturesColVol(params.pos, expRad, params.owner,
+		(params.weaponDef->noFriendlyDamage & 1) != 0,
+		(params.weaponDef->noFriendlyDamage & 2) != 0,unitCache, featureCache);
 
 	const unsigned int newNumUnits = unitCache.size();
 	const unsigned int newNumFeatures = featureCache.size();

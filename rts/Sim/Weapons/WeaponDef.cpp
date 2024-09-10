@@ -72,6 +72,7 @@ WEAPONTAG(bool, selfExplode).externalName("burnblow").defaultValue(false).descri
 WEAPONTAG(float, damageAreaOfEffect, damages.damageAreaOfEffect).fallbackName("areaOfEffect").defaultValue(8.0f).scaleValue(0.5f).description("The diameter (not radius!) for damage. Cratering controlled separately. Also the collision radius for projectile-based interceptors.");
 WEAPONTAG(float, edgeEffectiveness, damages.edgeEffectiveness).defaultValue(0.0f).maximumValue(1.0f).description("Exponent for a magic formula describing splash damage falloff. The damage always drops down to 0, this tag just controls how large the 'core' is. Can be negative for a very core-centric explosion. 0 is linear falloff with radius. 1 is no falloff.");
 WEAPONTAG(float, collisionSize).defaultValue(0.05f).description("Width for hitscan interceptors. Supposed to be collision radius for others but it's broken at the moment");
+WEAPONTAG(int, noFriendlyDamage).defaultValue(0).description("if the first bit  equals 1 explosive damage will ignore same team,if the second bit equals 1 explosive damage will ignore same ally team");
 
 // Projectile Properties
 WEAPONTAG(float, projectilespeed).externalName("weaponVelocity").fallbackName("maxVelocity").defaultValue(0.0f).minimumValue(0.01f).scaleValue(1.0f / GAME_SPEED).description("Maximum speed in elmo/s (won't accelerate further on its own)");
@@ -294,6 +295,7 @@ WeaponDef::WeaponDef()
 	id = 0;
 	projectileType = WEAPON_BASE_PROJECTILE;
 	collisionFlags = 0;
+	noFriendlyDamage = 0;
 
 	// set later by ProjectileDrawer
 	ptrailExplosionGeneratorID = CExplosionGeneratorHandler::EXPGEN_ID_INVALID;
@@ -355,6 +357,8 @@ WeaponDef::WeaponDef(const LuaTable& wdTable, const std::string& name_, int id_)
 		{ wdTable.GetFloat( "metalPerShot", 0.0f)
 		, wdTable.GetFloat("energyPerShot", 0.0f)
 	};
+
+	noFriendlyDamage = wdTable.GetInt("noFriendlyDamage",1);
 
 	//FIXME defaults depend on other tags
 	{

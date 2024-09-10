@@ -191,6 +191,8 @@ public:
 	bool avoidNeutral;      // if true, try to avoid neutral units while aiming
 	bool avoidGround;       // if true, try to avoid ground while aiming
 	bool avoidCloaked;      // if true, try to avoid cloaked units while aiming
+	int noFriendlyDamage;  // if the first bit  equals 1 explosive damage will ignore same team,if the second bit equals 1 explosive damage will ignore same ally team
+
 
 	/**
 	 * If nonzero, targetting units will TryTarget at the edge of collision sphere
