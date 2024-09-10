@@ -50,7 +50,7 @@ void LuaCommCentral::Tick()
 {
     if (commCentral.IsInit())
     {
-        if (commCentral.tick())
+        while (commCentral.tick())
         {
             auto msg = commCentral.PopMsg();
             if (msg.has_value())
